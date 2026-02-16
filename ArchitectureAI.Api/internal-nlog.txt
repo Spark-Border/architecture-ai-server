@@ -1,0 +1,5 @@
+2026-02-16 22:52:09.5820 Info Registered target NLog.Targets.FileTarget(Name=allfile)
+2026-02-16 22:52:09.5968 Info Registered target NLog.Targets.FileTarget(Name=ownFile-web)
+2026-02-16 22:52:09.6011 Info Registered target NLog.Targets.ConsoleTarget(Name=lifetimeConsole)
+2026-02-16 22:52:09.6050 Info NLog, Version=6.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c. File version: 6.1.0.4914. Product version: 6.1.0+5b1846554f5a8f98878ca64cce5a485ca3b8275c. GlobalAssemblyCache: False
+2026-02-16 22:52:09.7177 Info Configuration initialized: TargetNames=allfile, lifetimeConsole, ownFile-web, ConfigItems=79, AutoReload=true, FilePath=/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Api/bin/Debug/net10.0/nlog.config

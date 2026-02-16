@@ -1,5 +1,6 @@
 using ArchitectureAI.Application.Services; // Updated namespace
 using ArchitectureAI.Persistence.Extensions;
+using ArchitectureAI.Infrastructure.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting; // Added
@@ -25,6 +26,7 @@ try
 
     // Add services to the container.
     builder.Services.AddPersistenceServices(builder.Configuration);
+    builder.Services.AddInfrastructureServices(builder.Configuration);
 
 builder.Services.AddControllers(options =>
 {
@@ -90,6 +92,9 @@ builder.Services.AddControllers(options =>
     // Register Global Garbage Collection / Cleanup Service
     builder.Services.AddHostedService<ArchitectureAI.Application.Services.DataCleanupService>();
 
+    // Health Checks for Cloud Run / K8s
+    builder.Services.AddHealthChecks();
+
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
 
@@ -123,6 +128,7 @@ builder.Services.AddControllers(options =>
     app.UseAuthorization();
 
     app.MapControllers().RequireRateLimiting("fixed");
+    app.MapHealthChecks("/health");
 
     app.Run();
 }
