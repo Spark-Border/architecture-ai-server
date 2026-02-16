@@ -1,8 +1,8 @@
 using ArchitectureAI.Application.Interfaces.Services;
 using ArchitectureAI.Domain.Audit;
 using ArchitectureAI.Persistence.Context;
-using Microsoft.AspNetCore.Mvc.Filters;
 using Google.Cloud.Firestore;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace ArchitectureAI.Api.Filters;
 
@@ -12,14 +12,21 @@ public class AuditLogActionFilter : IAsyncActionFilter
     private readonly ITenantService _tenantService;
     private readonly ILogger<AuditLogActionFilter> _logger;
 
-    public AuditLogActionFilter(IAuditService auditService, ITenantService tenantService, ILogger<AuditLogActionFilter> logger)
+    public AuditLogActionFilter(
+        IAuditService auditService,
+        ITenantService tenantService,
+        ILogger<AuditLogActionFilter> logger
+    )
     {
         _auditService = auditService;
         _tenantService = tenantService;
         _logger = logger;
     }
 
-    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    public async Task OnActionExecutionAsync(
+        ActionExecutingContext context,
+        ActionExecutionDelegate next
+    )
     {
         // Execute the Action
         var resultContext = await next();
@@ -28,7 +35,12 @@ public class AuditLogActionFilter : IAsyncActionFilter
         {
             // Gather contextual info
             var httpContext = context.HttpContext;
-            var user = httpContext.User?.Identity?.Name ?? httpContext.User?.Claims.FirstOrDefault(c => c.Type == "user_id" || c.Type == "sub")?.Value ?? "Anonymous";
+            var user =
+                httpContext.User?.Identity?.Name
+                ?? httpContext
+                    .User?.Claims.FirstOrDefault(c => c.Type == "user_id" || c.Type == "sub")
+                    ?.Value
+                ?? "Anonymous";
             var path = httpContext.Request.Path;
             var method = httpContext.Request.Method;
             var statusCode = resultContext.HttpContext.Response.StatusCode;
@@ -48,7 +60,7 @@ public class AuditLogActionFilter : IAsyncActionFilter
                 CreatedBy = user,
                 Origin = ip,
                 ActionTime = DateTime.UtcNow,
-                DateCreated = DateTime.UtcNow
+                DateCreated = DateTime.UtcNow,
             };
 
             // Async Push

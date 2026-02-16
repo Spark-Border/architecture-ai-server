@@ -26,14 +26,16 @@ public static class DependencyInjection
 
         // 2. Register Generic Repository
         services.AddScoped(typeof(IGenericRepository<>), typeof(FirestoreRepository<>));
-        
+
         // 3. Register Asynchronous Audit Worker
         // Register the worker class itself as a Singleton
         services.AddSingleton<AuditBatchWorker>();
-        
+
         // Bind IAuditService interface to the SAME Singleton instance
-        services.AddSingleton<IAuditService>(provider => provider.GetRequiredService<AuditBatchWorker>());
-        
+        services.AddSingleton<IAuditService>(provider =>
+            provider.GetRequiredService<AuditBatchWorker>()
+        );
+
         // Register as a Hosted Service (Background Worker) using the SAME instance
         services.AddHostedService(provider => provider.GetRequiredService<AuditBatchWorker>());
 

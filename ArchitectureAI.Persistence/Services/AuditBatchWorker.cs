@@ -3,9 +3,9 @@ using ArchitectureAI.Application.Interfaces.Services;
 using ArchitectureAI.Domain.Audit;
 using ArchitectureAI.Persistence.Context;
 using Google.Cloud.Firestore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace ArchitectureAI.Persistence.Services;
 
@@ -22,7 +22,7 @@ public class AuditBatchWorker : BackgroundService, IAuditService
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
-        
+
         // Bounded Channel:
         // - SingleReader (Worker)
         // - AllowSynchronousContinuations = false for safety
@@ -31,7 +31,7 @@ public class AuditBatchWorker : BackgroundService, IAuditService
         {
             FullMode = BoundedChannelFullMode.Wait,
             SingleReader = true,
-            SingleWriter = false
+            SingleWriter = false,
         };
         _channel = Channel.CreateBounded<AuditTrail>(options);
     }
@@ -50,20 +50,20 @@ public class AuditBatchWorker : BackgroundService, IAuditService
 
         var batch = new List<AuditTrail>(BatchSize);
 
-        try 
+        try
         {
-             while (!stoppingToken.IsCancellationRequested)
-             {
-                 await ProcessBatchLoop(batch, stoppingToken);
-             }
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                await ProcessBatchLoop(batch, stoppingToken);
+            }
         }
         catch (OperationCanceledException)
         {
             // Normal shutdown
         }
-        catch (Exception ex) 
+        catch (Exception ex)
         {
-             _logger.LogError(ex, "Audit Worker Failed unexpectedly.");
+            _logger.LogError(ex, "Audit Worker Failed unexpectedly.");
         }
         finally
         {
@@ -71,7 +71,7 @@ public class AuditBatchWorker : BackgroundService, IAuditService
             await DrainQueueAsync(batch);
         }
     }
-    
+
     // Explicit StopAsync to ensure we don't just kill the thread immediately without trying to drain
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
@@ -82,27 +82,27 @@ public class AuditBatchWorker : BackgroundService, IAuditService
 
     private async Task ProcessBatchLoop(List<AuditTrail> batch, CancellationToken token)
     {
-        using (var cts = CancellationTokenSource.CreateLinkedTokenSource(token)) 
+        using (var cts = CancellationTokenSource.CreateLinkedTokenSource(token))
         {
-             cts.CancelAfter(_flushInterval);
-             try 
-             {
-                 while (batch.Count < BatchSize)
-                 {
-                     // Wait for item or timeout
-                     if (await _channel.Reader.WaitToReadAsync(cts.Token))
-                     {
-                         while (batch.Count < BatchSize && _channel.Reader.TryRead(out var item))
-                         {
-                             batch.Add(item);
-                         }
-                     }
-                 }
-             }
-             catch (OperationCanceledException) 
-             {
-                 // Flush interval reached
-             }
+            cts.CancelAfter(_flushInterval);
+            try
+            {
+                while (batch.Count < BatchSize)
+                {
+                    // Wait for item or timeout
+                    if (await _channel.Reader.WaitToReadAsync(cts.Token))
+                    {
+                        while (batch.Count < BatchSize && _channel.Reader.TryRead(out var item))
+                        {
+                            batch.Add(item);
+                        }
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Flush interval reached
+            }
         }
 
         if (batch.Count > 0)
@@ -111,11 +111,11 @@ public class AuditBatchWorker : BackgroundService, IAuditService
             batch.Clear();
         }
     }
-    
+
     private async Task DrainQueueAsync(List<AuditTrail> batch)
     {
         _logger.LogInformation("Draining Audit Queue to Firestore...");
-        
+
         // Read everything left in channel
         while (_channel.Reader.TryRead(out var item))
         {
@@ -126,7 +126,7 @@ public class AuditBatchWorker : BackgroundService, IAuditService
                 batch.Clear();
             }
         }
-        
+
         // Final flush
         if (batch.Count > 0)
         {

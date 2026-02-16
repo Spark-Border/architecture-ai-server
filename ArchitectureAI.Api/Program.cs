@@ -1,6 +1,6 @@
 using ArchitectureAI.Application.Services; // Updated namespace
-using ArchitectureAI.Persistence.Extensions;
 using ArchitectureAI.Infrastructure.Extensions;
+using ArchitectureAI.Persistence.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting; // Added
@@ -28,10 +28,10 @@ try
     builder.Services.AddPersistenceServices(builder.Configuration);
     builder.Services.AddInfrastructureServices(builder.Configuration);
 
-builder.Services.AddControllers(options =>
-{
-    options.Filters.Add<ArchitectureAI.Api.Filters.AuditLogActionFilter>();
-});
+    builder.Services.AddControllers(options =>
+    {
+        options.Filters.Add<ArchitectureAI.Api.Filters.AuditLogActionFilter>();
+    });
 
     // 1. Security & Performance Services
     builder

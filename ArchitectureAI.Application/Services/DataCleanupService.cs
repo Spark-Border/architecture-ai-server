@@ -28,7 +28,7 @@ public class DataCleanupService : BackgroundService
                 _logger.LogInformation("Running Daily Maintenance (Placeholder)...");
                 // Enterprise Rule: Audit Logs are NEVER deleted by this service.
                 // Future implementation: Cleanup 'Soft Deleted' business entities or temporary files.
-                
+
                 await Task.Delay(100); // Placeholder work
             }
             catch (Exception ex)

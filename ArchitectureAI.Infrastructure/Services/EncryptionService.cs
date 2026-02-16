@@ -10,16 +10,19 @@ public class EncryptionService : IEncryptionService
     private readonly byte[] _key;
 
     // AES-GCM requires a 12-byte Nonce (IV)
-    private const int NonceSize = 12; 
+    private const int NonceSize = 12;
+
     // Authentication Tag is 16 bytes
-    private const int TagSize = 16; 
+    private const int TagSize = 16;
 
     public EncryptionService(IConfiguration configuration)
     {
         var keyBase64 = configuration["Encryption:MasterKey"];
         if (string.IsNullOrEmpty(keyBase64))
         {
-            throw new InvalidOperationException("Encryption MasterKey is missing in configuration.");
+            throw new InvalidOperationException(
+                "Encryption MasterKey is missing in configuration."
+            );
         }
 
         try
@@ -28,21 +31,26 @@ public class EncryptionService : IEncryptionService
             // AES-256 requires 32 bytes key
             if (_key.Length != 32)
             {
-                throw new InvalidOperationException($"Encryption Key must be 32 bytes (AES-256). Current length: {_key.Length}");
+                throw new InvalidOperationException(
+                    $"Encryption Key must be 32 bytes (AES-256). Current length: {_key.Length}"
+                );
             }
         }
         catch (FormatException)
         {
-             throw new InvalidOperationException("Encryption MasterKey must be a valid Base64 string.");
+            throw new InvalidOperationException(
+                "Encryption MasterKey must be a valid Base64 string."
+            );
         }
     }
 
     public string Encrypt(string plainText)
     {
-        if (string.IsNullOrEmpty(plainText)) return plainText;
+        if (string.IsNullOrEmpty(plainText))
+            return plainText;
 
         using var aes = new AesGcm(_key, TagSize);
-        
+
         var plainBytes = Encoding.UTF8.GetBytes(plainText);
         var nonce = new byte[NonceSize];
         RandomNumberGenerator.Fill(nonce);
@@ -64,10 +72,11 @@ public class EncryptionService : IEncryptionService
 
     public string Decrypt(string cipherText)
     {
-        if (string.IsNullOrEmpty(cipherText)) return cipherText;
+        if (string.IsNullOrEmpty(cipherText))
+            return cipherText;
 
         var combined = Convert.FromBase64String(cipherText);
-        
+
         if (combined.Length < NonceSize + TagSize)
         {
             throw new ArgumentException("Invalid encrypted data format.");
