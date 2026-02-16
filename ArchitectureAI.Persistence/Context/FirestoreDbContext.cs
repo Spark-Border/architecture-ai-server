@@ -1,6 +1,3 @@
-using Google.Cloud.Firestore;
-using Microsoft.Extensions.Configuration;
-
 namespace ArchitectureAI.Persistence.Context;
 
 public class FirestoreDbContext
