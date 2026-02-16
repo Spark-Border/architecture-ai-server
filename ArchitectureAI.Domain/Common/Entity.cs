@@ -13,4 +13,7 @@ public class Entity
 
     [FirestoreProperty]
     public DateTime? DateModified { get; set; }
+
+    [FirestoreProperty]
+    public string TenantId { get; set; } = String.Empty;
 }

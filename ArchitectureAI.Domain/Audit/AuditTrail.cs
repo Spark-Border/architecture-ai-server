@@ -1,5 +1,5 @@
-using Google.Cloud.Firestore;
 using ArchitectureAI.Domain.Common;
+using Google.Cloud.Firestore;
 
 namespace ArchitectureAI.Domain.Audit
 {
@@ -11,6 +11,9 @@ namespace ArchitectureAI.Domain.Audit
 
         [FirestoreProperty]
         public string ActionDescription { get; set; } = String.Empty;
+
+        [FirestoreProperty]
+        public string Type { get; set; } = "General"; // Pipeline vs Data
 
         [FirestoreProperty]
         public string Module { get; set; } = String.Empty;

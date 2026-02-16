@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Helper function to match Tenant ID
+    // Checks if the user's token has a 'tenantId' claim that matches the document's 'tenantId'
+    function isTenant(tenantId) {
+      return isSignedIn() && request.auth.token.tenantId == tenantId;
+    }
+
+    // Match any document in any collection
+    match /{collection}/{document=**} {
+      
+      // ALLOW CREATE: if the new document's tenantId matches the user's token
+      allow create: if isSignedIn() 
+                    && request.resource.data.tenantId == request.auth.token.tenantId;
+
+      // ALLOW READ/UPDATE/DELETE: if the existing document's tenantId matches the user's token
+      allow read, update, delete: if isSignedIn() 
+                                  && resource.data.tenantId == request.auth.token.tenantId;
+    }
+  }
+}

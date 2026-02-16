@@ -7,4 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ArchitectureAI.Domain\ArchitectureAI.Domain.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
 </Project>
