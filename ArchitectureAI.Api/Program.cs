@@ -1,4 +1,14 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration; // Aadded
+using ArchitectureAI.Persistence.Extensions;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Ensure Environment Variables are loaded (defaults to true in CreateBuilder, but good to be explicit for hierarchy)
+builder.Configuration.AddEnvironmentVariables();
+
 
 // Add services to the container.
 builder.Services.AddPersistenceServices(builder.Configuration);

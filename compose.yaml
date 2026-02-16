@@ -5,3 +5,16 @@
       context: .
       dockerfile: ArchitectureAI.Api/Dockerfile
 
+  firebase:
+    image: andreysenov/firebase-tools
+    command: firebase emulators:start --project architecture-ai
+    ports:
+      - "4000:4000"
+      - "8080:8080"
+      - "9199:9199"
+    volumes:
+      - ./:/home/node/app
+    working_dir: /home/node/app
+    environment:
+      - GCP_PROJECT=architecture-ai
+
