@@ -3,6 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration; // Aadded
 using ArchitectureAI.Persistence.Extensions;
+using ArchitectureAI.Application.Services; // Updated namespace
+using Microsoft.AspNetCore.RateLimiting; // Added
+using Microsoft.AspNetCore.Http; 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +18,49 @@ builder.Services.AddPersistenceServices(builder.Configuration);
 
 builder.Services.AddControllers();
 
+// 1. Security & Performance Services
+builder.Services.AddAuthentication().AddJwtBearer(options =>
+{
+    var projectId = Environment.GetEnvironmentVariable("FIREBASE_PROJECT_ID") ?? builder.Configuration["Firebase:ProjectId"];
+    options.Authority = $"https://securetoken.google.com/{projectId}";
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = $"https://securetoken.google.com/{projectId}",
+        ValidateAudience = true,
+        ValidAudience = projectId,
+        ValidateLifetime = true
+    };
+});
+
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter("fixed", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 1000;
+        limiterOptions.Window = TimeSpan.FromSeconds(10);
+        limiterOptions.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+        limiterOptions.QueueLimit = 50;
+    });
+});
+
+builder.Services.AddOutputCache(options =>
+{
+    options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(60)));
+});
+
+// Add Standard Resilience Pipeline for any future HTTP Clients
+builder.Services.ConfigureHttpClientDefaults(http =>
+{
+    http.AddStandardResilienceHandler();
+});
+    
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -30,8 +76,22 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Security Headers (Simple manual implementation for now, or use library)
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Append("X-Frame-Options", "DENY");
+    context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
+    await next();
+});
+
+app.UseResponseCompression();
+app.UseRateLimiter();
+app.UseOutputCache();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapControllers().RequireRateLimiting("fixed");
 
 app.Run();
