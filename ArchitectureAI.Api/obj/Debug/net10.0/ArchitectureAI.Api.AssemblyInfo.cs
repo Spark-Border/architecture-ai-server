@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ArchitectureAI.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+aee113be5ae21ca71a9e1049b896a980c44fb792")]
 [assembly: System.Reflection.AssemblyProductAttribute("ArchitectureAI.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ArchitectureAI.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
