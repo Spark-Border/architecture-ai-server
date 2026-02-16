@@ -8,13 +8,13 @@ namespace ArchitectureAI.Api.Filters;
 
 public class AuditLogActionFilter : IAsyncActionFilter
 {
-    private readonly FirestoreDbContext _dbContext;
+    private readonly IAuditService _auditService;
     private readonly ITenantService _tenantService;
     private readonly ILogger<AuditLogActionFilter> _logger;
 
-    public AuditLogActionFilter(FirestoreDbContext dbContext, ITenantService tenantService, ILogger<AuditLogActionFilter> logger)
+    public AuditLogActionFilter(IAuditService auditService, ITenantService tenantService, ILogger<AuditLogActionFilter> logger)
     {
-        _dbContext = dbContext;
+        _auditService = auditService;
         _tenantService = tenantService;
         _logger = logger;
     }
@@ -51,9 +51,8 @@ public class AuditLogActionFilter : IAsyncActionFilter
                 DateCreated = DateTime.UtcNow
             };
 
-            // Fire and forget (save to Firestore)
-            var collection = _dbContext.Collection(nameof(AuditTrail));
-            await collection.Document(audit.Id).SetAsync(audit);
+            // Async Push
+            await _auditService.EnqueueAuditLogAsync(audit);
         }
         catch (Exception ex)
         {

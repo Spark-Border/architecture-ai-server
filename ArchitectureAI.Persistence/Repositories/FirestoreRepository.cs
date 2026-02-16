@@ -12,19 +12,23 @@ public class FirestoreRepository<T> : IGenericRepository<T> where T : Entity
 {
     private readonly Context.FirestoreDbContext _context;
     private readonly CollectionReference _collection;
-    private readonly CollectionReference _auditCollection;
     private readonly ITenantService _tenantService;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IAuditService _auditService;
     
     private string _tenantId => _tenantService.TenantId ?? throw new UnauthorizedAccessException("Tenant ID is missing.");
 
-    public FirestoreRepository(Context.FirestoreDbContext context, ITenantService tenantService, IHttpContextAccessor httpContextAccessor)
+    public FirestoreRepository(
+        Context.FirestoreDbContext context, 
+        ITenantService tenantService, 
+        IHttpContextAccessor httpContextAccessor, 
+        IAuditService auditService)
     {
         _context = context;
         _tenantService = tenantService;
         _httpContextAccessor = httpContextAccessor;
+        _auditService = auditService;
         _collection = _context.Collection(typeof(T).Name);
-        _auditCollection = _context.Collection(nameof(AuditTrail));
     }
 
     public async Task<T> AddAsync(T entity)
@@ -190,12 +194,11 @@ public class FirestoreRepository<T> : IGenericRepository<T> where T : Entity
                 DateCreated = DateTime.UtcNow
             };
 
-            await _auditCollection.Document(audit.Id).SetAsync(audit);
+            // Async Push to Queue (Fast, with backpressure if full)
+            await _auditService.EnqueueAuditLogAsync(audit);
         }
         catch (Exception ex)
         {
-            // Silently fail or log to console to avoid breaking the main flow
-            // Ideally use ILogger here if injected
             Console.WriteLine($"Audit Error: {ex.Message}");
         }
     }
