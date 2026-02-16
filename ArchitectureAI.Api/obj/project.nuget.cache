@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "w9e/FP5b3Q4=",
+  "success": true,
+  "projectFilePath": "/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Api/ArchitectureAI.Api.csproj",
+  "expectedPackageFiles": [
+    "/Users/asiwaju/.nuget/packages/microsoft.aspnetcore.openapi/10.0.3/microsoft.aspnetcore.openapi.10.0.3.nupkg.sha512",
+    "/Users/asiwaju/.nuget/packages/microsoft.openapi/2.0.0/microsoft.openapi.2.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

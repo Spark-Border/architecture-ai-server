@@ -1,0 +1,7 @@
+﻿services:
+  architectureai.api:
+    image: architectureai.api
+    build:
+      context: .
+      dockerfile: ArchitectureAI.Api/Dockerfile
+
