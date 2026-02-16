@@ -4,6 +4,7 @@
   </Folder>
   <Project Path="ArchitectureAI.Api/ArchitectureAI.Api.csproj" />
   <Project Path="ArchitectureAI.Application/ArchitectureAI.Application.csproj" />
+  <Project Path="ArchitectureAI.Common/ArchitectureAI.Common.csproj" />
   <Project Path="ArchitectureAI.Domain/ArchitectureAI.Domain.csproj" />
   <Project Path="ArchitectureAI.Infrastructure/ArchitectureAI.Infrastructure.csproj" />
   <Project Path="ArchitectureAI.Persistence/ArchitectureAI.Persistence.csproj" />
