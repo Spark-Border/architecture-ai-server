@@ -1,6 +1,6 @@
 using Google.Cloud.Firestore;
-using Microsoft.Extensions.Configuration;
 using Grpc.Core; // Required for ChannelCredentials
+using Microsoft.Extensions.Configuration;
 
 namespace ArchitectureAI.Persistence.Context;
 
@@ -15,7 +15,9 @@ public class FirestoreDbContext
 
         if (string.IsNullOrEmpty(projectId))
         {
-            throw new InvalidOperationException("FIREBASE_PROJECT_ID environment variable is missing. Please set it in your .env file or system environment.");
+            throw new InvalidOperationException(
+                "FIREBASE_PROJECT_ID environment variable is missing. Please set it in your .env file or system environment."
+            );
         }
 
         // Ensure GOOGLE_APPLICATION_CREDENTIALS is set in environment or handled via default auth
@@ -26,6 +28,6 @@ public class FirestoreDbContext
     {
         return _firestoreDb.Collection(collectionName);
     }
-    
+
     public FirestoreDb Db => _firestoreDb;
 }

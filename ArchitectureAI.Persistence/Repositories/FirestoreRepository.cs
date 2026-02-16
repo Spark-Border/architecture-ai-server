@@ -3,6 +3,8 @@ using ArchitectureAI.Application.Interfaces.Repositories;
 using ArchitectureAI.Application.Interfaces.Services;
 using ArchitectureAI.Domain.Common;
 using System.Linq.Expressions;
+using Microsoft.AspNetCore.Http;
+using ArchitectureAI.Domain.Audit;
 
 namespace ArchitectureAI.Persistence.Repositories;
 
@@ -10,14 +12,19 @@ public class FirestoreRepository<T> : IGenericRepository<T> where T : Entity
 {
     private readonly Context.FirestoreDbContext _context;
     private readonly CollectionReference _collection;
+    private readonly CollectionReference _auditCollection;
     private readonly ITenantService _tenantService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    
     private string _tenantId => _tenantService.TenantId ?? throw new UnauthorizedAccessException("Tenant ID is missing.");
 
-    public FirestoreRepository(Context.FirestoreDbContext context, ITenantService tenantService)
+    public FirestoreRepository(Context.FirestoreDbContext context, ITenantService tenantService, IHttpContextAccessor httpContextAccessor)
     {
         _context = context;
         _tenantService = tenantService;
+        _httpContextAccessor = httpContextAccessor;
         _collection = _context.Collection(typeof(T).Name);
+        _auditCollection = _context.Collection(nameof(AuditTrail));
     }
 
     public async Task<T> AddAsync(T entity)
@@ -32,6 +39,8 @@ public class FirestoreRepository<T> : IGenericRepository<T> where T : Entity
 
         var docRef = _collection.Document(entity.Id);
         await docRef.SetAsync(entity);
+        
+        await LogAuditAsync("Created", entity);
         return entity;
     }
 
@@ -99,6 +108,7 @@ public class FirestoreRepository<T> : IGenericRepository<T> where T : Entity
         if (entity.TenantId != _tenantId) return 0;
         
         await _collection.Document(entity.Id).DeleteAsync();
+        await LogAuditAsync("Deleted", entity);
         return 1;
     }
     
@@ -124,6 +134,7 @@ public class FirestoreRepository<T> : IGenericRepository<T> where T : Entity
         
         var docRef = _collection.Document(entity.Id);
         await docRef.SetAsync(entity, SetOptions.MergeAll);
+        await LogAuditAsync("Updated", entity);
     }
 
     public async Task<int> CountAsync(Expression<Func<T, bool>> expression)
@@ -147,5 +158,45 @@ public class FirestoreRepository<T> : IGenericRepository<T> where T : Entity
     public Task<PagedResult<T>> GetPagedAsync(int page, int pageSize, Expression<Func<T, bool>> filter = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, params string[] includeProperties)
     {
          throw new NotImplementedException();
+    }
+    
+    private async Task LogAuditAsync(string action, T entity)
+    {
+        // Prevent infinite loop: Don't audit the audit trail itself
+        if (typeof(T) == typeof(AuditTrail)) return;
+
+        try
+        {
+            var user = _httpContextAccessor.HttpContext?.User?.Identity?.Name ?? "System/Anonymous";
+            // Also try to get claim if Name is null
+            if (user == "System/Anonymous")
+            {
+                 var uid = _httpContextAccessor.HttpContext?.User?.Claims.FirstOrDefault(c => c.Type == "user_id" || c.Type == "sub")?.Value;
+                 if (!string.IsNullOrEmpty(uid)) user = uid;
+            }
+            
+            var audit = new AuditTrail
+            {
+                Id = Guid.NewGuid().ToString(),
+                TenantId = _tenantId,
+                ActionName = action,
+                ActionDescription = $"Entity {typeof(T).Name} (ID: {entity.Id}) was {action}.",
+                Type = "Data",
+                Module = typeof(T).Name,
+                LoggedInUser = user,
+                CreatedBy = user,
+                Origin = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown",
+                ActionTime = DateTime.UtcNow,
+                DateCreated = DateTime.UtcNow
+            };
+
+            await _auditCollection.Document(audit.Id).SetAsync(audit);
+        }
+        catch (Exception ex)
+        {
+            // Silently fail or log to console to avoid breaking the main flow
+            // Ideally use ILogger here if injected
+            Console.WriteLine($"Audit Error: {ex.Message}");
+        }
     }
 }

@@ -10,14 +10,17 @@ namespace ArchitectureAI.Persistence.Extensions;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddPersistenceServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddPersistenceServices(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
         services.AddHttpContextAccessor(); // Required for TenantService
         services.AddScoped<ITenantService, CurrentTenantService>();
-        
+
         services.AddSingleton<FirestoreDbContext>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(FirestoreRepository<>));
-        
+
         return services;
     }
 }

@@ -1,4 +1,5 @@
 using Google.Cloud.Firestore;
+
 namespace ArchitectureAI.Domain.Common;
 
 [FirestoreData]
