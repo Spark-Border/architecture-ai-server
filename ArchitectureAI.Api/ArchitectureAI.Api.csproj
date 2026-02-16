@@ -6,11 +6,16 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\.dockerignore">
       <Link>.dockerignore</Link>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ArchitectureAI.Application\ArchitectureAI.Application.csproj" />
+    <ProjectReference Include="..\ArchitectureAI.Infrastructure\ArchitectureAI.Infrastructure.csproj" />
+    <ProjectReference Include="..\ArchitectureAI.Persistence\ArchitectureAI.Persistence.csproj" />
   </ItemGroup>
 </Project>

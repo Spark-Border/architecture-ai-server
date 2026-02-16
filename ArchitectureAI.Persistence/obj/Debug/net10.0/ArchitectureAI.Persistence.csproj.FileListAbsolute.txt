@@ -1,6 +1,0 @@
-/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Persistence/obj/Debug/net10.0/ArchitectureAI.Persistence.csproj.AssemblyReference.cache
-/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Persistence/obj/Debug/net10.0/ArchitectureAI.Persistence.GeneratedMSBuildEditorConfig.editorconfig
-/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Persistence/obj/Debug/net10.0/ArchitectureAI.Persistence.AssemblyInfoInputs.cache
-/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Persistence/obj/Debug/net10.0/ArchitectureAI.Persistence.AssemblyInfo.cs
-/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Persistence/obj/Debug/net10.0/ArchitectureAI.Persistence.csproj.CoreCompileInputs.cache
-/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Persistence/obj/Debug/net10.0/ArchitectureAI.Persistence.sourcelink.json

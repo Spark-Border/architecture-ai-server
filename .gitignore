@@ -1,0 +1,64 @@
+## .NET
+[Oo]bj/
+[Bb]in/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Ll]og/
+[Ll]ogs/
+.vs/
+
+## Generated files
+*.dll
+*.pdb
+*.exe
+*.obj
+*.cache
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.slnx.docstates
+
+## IDEs
+.idea/
+.vscode/
+
+## .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Library/Framework specific
+*.nupkg
+*.snupkg
+ScaffoldingReadMe.txt
+*.binlog
+TestResult.xml
+nunit-*.xml
+
+## Azure/Firebase
+appsettings.Development.json
+appsettings.Production.json
+google-credentials.json
+firebase-debug.log
+.env
+
+## macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+## Other
+/HoardingAPI-setup

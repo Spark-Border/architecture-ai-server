@@ -1,22 +1,30 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
+using Google.Cloud.Firestore;
+using ArchitectureAI.Domain.Common;
 
 namespace ArchitectureAI.Domain.Audit
 {
-    public class AuditTrail
+    [FirestoreData]
+    public class AuditTrail : Entity
     {
-        [Key]
-        public int Id;
+        [FirestoreProperty]
         public string ActionName { get; set; } = String.Empty;
+
+        [FirestoreProperty]
         public string ActionDescription { get; set; } = String.Empty;
+
+        [FirestoreProperty]
         public string Module { get; set; } = String.Empty;
+
+        [FirestoreProperty]
         public string LoggedInUser { get; set; } = String.Empty;
+
+        [FirestoreProperty]
         public string CreatedBy { get; set; } = String.Empty;
+
+        [FirestoreProperty]
         public string Origin { get; set; } = String.Empty;
+
+        [FirestoreProperty]
         public DateTime ActionTime { get; set; }
-        public DateTime DateCreated { get; set; }
     }
 }
