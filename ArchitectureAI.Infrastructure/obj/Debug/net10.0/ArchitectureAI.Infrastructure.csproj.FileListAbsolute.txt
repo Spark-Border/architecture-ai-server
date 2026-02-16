@@ -1,0 +1,12 @@
+/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Infrastructure/bin/Debug/net10.0/ArchitectureAI.Infrastructure.deps.json
+/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Infrastructure/bin/Debug/net10.0/ArchitectureAI.Infrastructure.dll
+/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Infrastructure/bin/Debug/net10.0/ArchitectureAI.Infrastructure.pdb
+/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Infrastructure/obj/Debug/net10.0/ArchitectureAI.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Infrastructure/obj/Debug/net10.0/ArchitectureAI.Infrastructure.AssemblyInfoInputs.cache
+/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Infrastructure/obj/Debug/net10.0/ArchitectureAI.Infrastructure.AssemblyInfo.cs
+/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Infrastructure/obj/Debug/net10.0/ArchitectureAI.Infrastructure.csproj.CoreCompileInputs.cache
+/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Infrastructure/obj/Debug/net10.0/ArchitectureAI.Infrastructure.sourcelink.json
+/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Infrastructure/obj/Debug/net10.0/ArchitectureAI.Infrastructure.dll
+/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Infrastructure/obj/Debug/net10.0/refint/ArchitectureAI.Infrastructure.dll
+/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Infrastructure/obj/Debug/net10.0/ArchitectureAI.Infrastructure.pdb
+/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Infrastructure/obj/Debug/net10.0/ref/ArchitectureAI.Infrastructure.dll

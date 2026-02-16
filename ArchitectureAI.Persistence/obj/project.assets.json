@@ -1,11 +1,62 @@
 {
   "version": 3,
   "targets": {
-    "net10.0": {}
+    "net10.0": {
+      "ArchitectureAI.Application/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/ArchitectureAI.Application.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/ArchitectureAI.Application.dll": {}
+        }
+      },
+      "ArchitectureAI.Domain/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/ArchitectureAI.Domain.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/ArchitectureAI.Domain.dll": {}
+        }
+      },
+      "ArchitectureAI.Infrastructure/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/ArchitectureAI.Infrastructure.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/ArchitectureAI.Infrastructure.dll": {}
+        }
+      }
+    }
   },
-  "libraries": {},
+  "libraries": {
+    "ArchitectureAI.Application/1.0.0": {
+      "type": "project",
+      "path": "../ArchitectureAI.Application/ArchitectureAI.Application.csproj",
+      "msbuildProject": "../ArchitectureAI.Application/ArchitectureAI.Application.csproj"
+    },
+    "ArchitectureAI.Domain/1.0.0": {
+      "type": "project",
+      "path": "../ArchitectureAI.Domain/ArchitectureAI.Domain.csproj",
+      "msbuildProject": "../ArchitectureAI.Domain/ArchitectureAI.Domain.csproj"
+    },
+    "ArchitectureAI.Infrastructure/1.0.0": {
+      "type": "project",
+      "path": "../ArchitectureAI.Infrastructure/ArchitectureAI.Infrastructure.csproj",
+      "msbuildProject": "../ArchitectureAI.Infrastructure/ArchitectureAI.Infrastructure.csproj"
+    }
+  },
   "projectFileDependencyGroups": {
-    "net10.0": []
+    "net10.0": [
+      "ArchitectureAI.Application >= 1.0.0",
+      "ArchitectureAI.Domain >= 1.0.0",
+      "ArchitectureAI.Infrastructure >= 1.0.0"
+    ]
   },
   "packageFolders": {
     "/Users/asiwaju/.nuget/packages/": {}
@@ -31,7 +82,17 @@
       "frameworks": {
         "net10.0": {
           "targetAlias": "net10.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Application/ArchitectureAI.Application.csproj": {
+              "projectPath": "/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Application/ArchitectureAI.Application.csproj"
+            },
+            "/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Domain/ArchitectureAI.Domain.csproj": {
+              "projectPath": "/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Domain/ArchitectureAI.Domain.csproj"
+            },
+            "/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Infrastructure/ArchitectureAI.Infrastructure.csproj": {
+              "projectPath": "/Users/asiwaju/Documents/Workspace/ArchitectureAI/ArchitectureAI.Infrastructure/ArchitectureAI.Infrastructure.csproj"
+            }
+          }
         }
       },
       "warningProperties": {

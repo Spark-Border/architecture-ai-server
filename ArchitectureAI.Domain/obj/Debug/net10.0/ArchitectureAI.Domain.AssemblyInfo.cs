@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ArchitectureAI.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a79f0c9e19d691f63425513a81f129182d3bc04a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+094c61bb789ffcc8869c29609a9aac13ab25e244")]
 [assembly: System.Reflection.AssemblyProductAttribute("ArchitectureAI.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ArchitectureAI.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
