@@ -18,7 +18,7 @@ public class DataSeeder(
     public async Task SeedAsync()
     {
         // Set System Tenant Context for Seeding
-        _tenantService.SetTenant("system");
+        _tenantService.SetTenant("012345678901");
 
         await SeedRolesAsync();
         await SeedUsersAsync();
@@ -36,13 +36,13 @@ public class DataSeeder(
                 UserName = adminEmail,
                 Email = adminEmail,
                 Name = "Super Admin",
-                EmailConfirmed = true
+                EmailConfirmed = true,
             };
 
             var result = await _userManager.CreateAsync(adminUser, adminPassword);
             if (result.Succeeded)
             {
-                await _userManager.AddToRoleAsync(adminUser, "Admin");
+                await _userManager.AddToRoleAsync(adminUser, "Root Admin");
             }
         }
     }

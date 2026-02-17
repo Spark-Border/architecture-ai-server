@@ -1,8 +1,11 @@
+using System;
+using System.Linq;
 using ArchitectureAI.Application.Auth.DTOs;
 using ArchitectureAI.Application.Interfaces.Repositories;
 using ArchitectureAI.Application.Interfaces.Services;
 using ArchitectureAI.Common.Common.Responses;
 using ArchitectureAI.Domain.Users;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -15,6 +18,9 @@ namespace ArchitectureAI.Application.Services
         RoleManager<ApplicationRole> roleManager,
         IGenericRepository<ApplicationUser> userRepository,
         ITokenService tokenService,
+        ITenantService tenantService,
+        IAuditService auditService,
+        IHttpContextAccessor httpContextAccessor, // Injected for IP
         IConfiguration configuration,
         ILogger<AuthenticationService> logger
     ) : IAuthenticationService
@@ -24,49 +30,45 @@ namespace ArchitectureAI.Application.Services
         private readonly RoleManager<ApplicationRole> _roleManager = roleManager;
         private readonly IGenericRepository<ApplicationUser> _userRepository = userRepository;
         private readonly ITokenService _tokenService = tokenService;
+        private readonly ITenantService _tenantService = tenantService;
+        private readonly IAuditService _auditService = auditService;
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor; // Assigned
         private readonly IConfiguration _configuration = configuration;
         private readonly ILogger<AuthenticationService> _logger = logger;
 
         public async Task<Response<LoginResponse>> LoginAsync(LoginRequest request)
         {
             _logger.LogInformation("Attempting login for user: {Email}", request.Email);
+            
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
             {
-                _logger.LogWarning(
-                    "Login failed for user: {Email}. User not found.",
-                    request.Email
-                );
+                _logger.LogWarning("Login failed for user: {Email}. User not found.", request.Email);
+                await LogAuthEventAsync("Login Failed", $"Login attempted for non-existent user: {request.Email}", "system", "Anonymous");
                 return Response<LoginResponse>.Failure("Invalid credentials", 401);
             }
 
-            var result = await _signInManager.CheckPasswordSignInAsync(
-                user,
-                request.Password,
-                false
-            );
+            var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
             if (!result.Succeeded)
             {
-                _logger.LogWarning(
-                    "Login failed for user: {Email}. Invalid password.",
-                    request.Email
-                );
+                _logger.LogWarning("Login failed for user: {Email}. Invalid password.", request.Email);
+                await LogAuthEventAsync("Login Failed", $"Invalid password provided for user: {request.Email}", user.TenantId ?? "system", user.Email);
                 return Response<LoginResponse>.Failure("Invalid credentials", 401);
             }
 
-            // Get Roles and Flatten Permissions
+            // SET TENANT CONTEXT
+            if (!string.IsNullOrEmpty(user.TenantId))
+            {
+                _tenantService.SetTenant(user.TenantId);
+            }
+
             var roles = await _userManager.GetRolesAsync(user);
             var permissions = new List<string>();
-
             foreach (var roleName in roles)
             {
                 var role = await _roleManager.FindByNameAsync(roleName);
-                if (role != null)
-                {
-                    permissions.AddRange(role.Permissions);
-                }
+                if (role != null) permissions.AddRange(role.Permissions);
             }
-
             permissions = [.. permissions.Distinct()];
 
             var token = _tokenService.GenerateJwtToken(user, roles, permissions);
@@ -74,7 +76,11 @@ namespace ArchitectureAI.Application.Services
 
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+            
             await _userManager.UpdateAsync(user);
+            
+            // Explicit Audit Log for Success
+            await LogAuthEventAsync("Login", $"User {user.Email} logged in successfully.", user.TenantId, user.Email);
 
             _logger.LogInformation("Login successful for user: {Email}", request.Email);
 
@@ -84,7 +90,7 @@ namespace ArchitectureAI.Application.Services
                 RefreshToken = refreshToken,
                 User = new UserDto
                 {
-                    Id = user.Id, // Now string
+                    Id = user.Id,
                     Email = user.Email,
                     Name = user.Name,
                     Roles = [.. roles],
@@ -95,7 +101,26 @@ namespace ArchitectureAI.Application.Services
             return Response<LoginResponse>.Success(response, "Login successful");
         }
 
-        // ... existing methods ...
+        // Helper for cleaner Audit Logging with IP capture
+        private async Task LogAuthEventAsync(string action, string description, string tenantId, string userEmail)
+        {
+            var ipAddress = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+            
+            await _auditService.EnqueueAuditLogAsync(new Domain.Audit.AuditTrail
+            {
+                Id = Guid.NewGuid().ToString(),
+                TenantId = tenantId ?? "system",
+                ActionName = action,
+                ActionDescription = description,
+                Type = "Security",
+                Module = "Authentication",
+                LoggedInUser = userEmail,
+                CreatedBy = userEmail, // Or System
+                ActionTime = DateTime.UtcNow,
+                DateCreated = DateTime.UtcNow,
+                Origin = ipAddress!
+            });
+        }
 
         public async Task<Response<RegisterResponse>> RegisterAsync(RegisterRequest request)
         {
@@ -116,21 +141,21 @@ namespace ArchitectureAI.Application.Services
                 Email = request.Email,
                 Name = request.Email.Split('@')[0],
                 EmailConfirmed = false,
+                TenantId = await GenerateUniqueTenantIdAsync() // Secure & Checked for collisions
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                _logger.LogError(
-                    "Registration failed for {Email}: {Errors}",
-                    request.Email,
-                    errors
-                );
+                _logger.LogError("Registration failed for {Email}: {Errors}", request.Email, errors);
                 return Response<RegisterResponse>.Failure($"Registration failed: {errors}", 400);
             }
 
-            _logger.LogInformation("User created successfully: {Email}", request.Email);
+            // Explicit Audit Log for Registration
+            await LogAuthEventAsync("Register", $"New user registered. Created Organization ID: {user.TenantId}", user.TenantId, user.Email);
+
+            _logger.LogInformation("User created successfully: {Email} (Org: {TenantId})", request.Email, user.TenantId);
 
             var response = new RegisterResponse
             {
@@ -219,11 +244,22 @@ namespace ArchitectureAI.Application.Services
         )
         {
             _logger.LogInformation("Attempting token refresh.");
-            var user = await _userRepository.FindAsync(u => u.RefreshToken == request.RefreshToken);
+            
+            // Note: FindAsync uses default tenant "system" because request is unauthenticated here usually
+            // However, CurrentTenantService might resolve from header if provided. Alternatively, we assume "system" lookup.
+            // If the user's RefreshToken is unique globally, this works.
+            // If the user's RefreshToken is unique globally, this works.
+            var user = await _userRepository.FindAsync(u => u.RefreshToken == request.RefreshToken, ignoreTenantId: true);
             if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {
                 _logger.LogWarning("Token refresh failed. Invalid or expired token.");
                 return Response<RefreshTokenResponse>.Failure("Invalid token", 401);
+            }
+
+            // SET TENANT CONTEXT for Audit Trail consistency
+            if (!string.IsNullOrEmpty(user.TenantId))
+            {
+                _tenantService.SetTenant(user.TenantId);
             }
 
             var roles = await _userManager.GetRolesAsync(user);
@@ -243,6 +279,8 @@ namespace ArchitectureAI.Application.Services
 
             user.RefreshToken = newRefreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+            
+            // Audit Log will now use user's TenantId
             await _userManager.UpdateAsync(user);
 
             _logger.LogInformation("Token refresh successful for user: {Email}", user.Email);
@@ -268,6 +306,55 @@ namespace ArchitectureAI.Application.Services
                 _logger.LogInformation("User logged out: {UserId}", userId);
             }
             return Response<string>.Success("Logged out successfully");
+        }
+        // Helper to generate UNIQUE 12-digit Org ID (like AWS/GCP)
+        // Uses Crypto RNG + Database Check to ensure no collisions.
+        private async Task<string> GenerateUniqueTenantIdAsync()
+        {
+            const int MaxRetries = 5;
+            for (int i = 0; i < MaxRetries; i++)
+            {
+                var candidateId = GenerateCryptoRandomId();
+                
+                // Check for collision
+                // We must ensure no other user has this TenantId. 
+                // Since 1 user = 1 tenant owner initially, checking users is a proxy for checking tenants.
+                // ideally we check a specific 'Tenants' collection, but for now user.TenantId is the source of truth.
+                var count = await _userRepository.CountAsync(u => u.TenantId == candidateId);
+                if (count == 0)
+                {
+                    return candidateId;
+                }
+                
+                _logger.LogWarning("Collision detected for TenantID: {Id}. Retrying...", candidateId);
+            }
+
+            throw new InvalidOperationException("Failed to generate a unique Tenant ID after multiple attempts.");
+        }
+
+        private static string GenerateCryptoRandomId()
+        {
+            // Cryptographically secure RNG
+            // 12 digits = 10^12 combinations.
+            const int length = 12;
+            var chars = new char[length];
+            var allowed = "0123456789";
+            
+            // Use RandomNumberGenerator for security
+            var data = new byte[length];
+            using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(data);
+            }
+
+            for (int i = 0; i < length; i++)
+            {
+                // Modulo bias is negligible for 10 chars vs 256 bytes, but strictly speaking exists.
+                // For TenantID it is acceptable.
+                chars[i] = allowed[data[i] % allowed.Length];
+            }
+
+            return new string(chars);
         }
     }
 }

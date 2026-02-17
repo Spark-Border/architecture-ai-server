@@ -17,7 +17,7 @@ namespace ArchitectureAI.Application.Interfaces.Repositories
         Task<T> AddAsync(T entity);
         Task AddRangeAsync(IEnumerable<T> entities);
         IQueryable<T> FindByCondition(Expression<Func<T, bool>> expression, bool trackChanges);
-        Task<T> FindAsync(Expression<Func<T, bool>> expression);
+        Task<T> FindAsync(Expression<Func<T, bool>> expression, bool ignoreTenantId = false);
         Task<IEnumerable<T>> FindAndIncludeAsync(
             Expression<Func<T, bool>> expression,
             params string[] includeProperties

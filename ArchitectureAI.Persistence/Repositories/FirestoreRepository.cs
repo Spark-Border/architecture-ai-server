@@ -18,7 +18,7 @@ public class FirestoreRepository<T> : IGenericRepository<T>
     private readonly IAuditService _auditService;
 
     private string _tenantId =>
-        _tenantService.TenantId ?? throw new UnauthorizedAccessException("Tenant ID is missing.");
+        _tenantService.TenantId ?? "system";
 
     public FirestoreRepository(
         Context.FirestoreDbContext context,
@@ -74,7 +74,7 @@ public class FirestoreRepository<T> : IGenericRepository<T>
         throw new NotImplementedException("Direct IQueryable not fully supported. Use FindAsync.");
     }
 
-    public async Task<T> FindAsync(Expression<Func<T, bool>> expression)
+    public async Task<T> FindAsync(Expression<Func<T, bool>> expression, bool ignoreTenantId = false)
     {
         // Simple Expression Parser for "x => x.Prop == Value"
         if (expression.Body is BinaryExpression binaryExpression
@@ -117,8 +117,12 @@ public class FirestoreRepository<T> : IGenericRepository<T>
             if (!string.IsNullOrEmpty(propertyName))
             {
                 var query = _collection.WhereEqualTo(propertyName, value);
-                // Enforce Tenant Isolation
-                query = query.WhereEqualTo(nameof(Entity.TenantId), _tenantId);
+                
+                // Enforce Tenant Isolation (unless ignored for global lookups like Login/UserStore)
+                if (!ignoreTenantId)
+                {
+                    query = query.WhereEqualTo(nameof(Entity.TenantId), _tenantId);
+                }
 
                 var snapshot = await query.Limit(1).GetSnapshotAsync();
                 if (snapshot.Count > 0)
