@@ -1,7 +1,3 @@
-using ArchitectureAI.Application.Interfaces.Repositories;
-using ArchitectureAI.Domain.Audit;
-using ArchitectureAI.Domain.Common;
-using Google.Cloud.Firestore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 

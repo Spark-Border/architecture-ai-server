@@ -1,5 +1,4 @@
 using Google.Cloud.Firestore;
-using Grpc.Core; // Required for ChannelCredentials
 using Microsoft.Extensions.Configuration;
 
 namespace ArchitectureAI.Persistence.Context;

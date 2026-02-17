@@ -15,7 +15,30 @@ public class DataSeeder(
     public async Task SeedAsync()
     {
         await SeedRolesAsync();
-        // await SeedUsersAsync(); // Optional: Seed default admin
+        await SeedUsersAsync();
+    }
+
+    private async Task SeedUsersAsync()
+    {
+        var adminEmail = "superadmin@architectureai.com";
+        var adminPassword = "P@ssw0rd!";
+
+        if (await _userManager.FindByEmailAsync(adminEmail) == null)
+        {
+            var adminUser = new ApplicationUser
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
+                Name = "Super Admin",
+                EmailConfirmed = true
+            };
+
+            var result = await _userManager.CreateAsync(adminUser, adminPassword);
+            if (result.Succeeded)
+            {
+                await _userManager.AddToRoleAsync(adminUser, "Admin");
+            }
+        }
     }
 
     private async Task SeedRolesAsync()
@@ -25,7 +48,7 @@ public class DataSeeder(
         {
             new()
             {
-                Name = "Admin",
+                Name = "Root Admin",
                 Description = "System Administrator with full access",
                 IsSystemRole = true,
                 Permissions = Permissions.All, // Grant all permissions

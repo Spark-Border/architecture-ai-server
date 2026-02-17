@@ -1,16 +1,11 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using ArchitectureAI.Application.Auth.DTOs;
-using ArchitectureAI.Application.Constants;
 using ArchitectureAI.Application.Interfaces.Repositories;
+using ArchitectureAI.Application.Interfaces.Services;
 using ArchitectureAI.Common.Common.Responses;
 using ArchitectureAI.Domain.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
 
 namespace ArchitectureAI.Application.Services
 {
@@ -19,6 +14,7 @@ namespace ArchitectureAI.Application.Services
         SignInManager<ApplicationUser> signInManager,
         RoleManager<ApplicationRole> roleManager,
         IGenericRepository<ApplicationUser> userRepository,
+        ITokenService tokenService,
         IConfiguration configuration,
         ILogger<AuthenticationService> logger
     ) : IAuthenticationService
@@ -27,6 +23,7 @@ namespace ArchitectureAI.Application.Services
         private readonly SignInManager<ApplicationUser> _signInManager = signInManager;
         private readonly RoleManager<ApplicationRole> _roleManager = roleManager;
         private readonly IGenericRepository<ApplicationUser> _userRepository = userRepository;
+        private readonly ITokenService _tokenService = tokenService;
         private readonly IConfiguration _configuration = configuration;
         private readonly ILogger<AuthenticationService> _logger = logger;
 
@@ -70,10 +67,10 @@ namespace ArchitectureAI.Application.Services
                 }
             }
 
-            permissions = permissions.Distinct().ToList();
+            permissions = [.. permissions.Distinct()];
 
-            var token = GenerateJwtToken(user, roles, permissions);
-            var refreshToken = GenerateRefreshToken();
+            var token = _tokenService.GenerateJwtToken(user, roles, permissions);
+            var refreshToken = _tokenService.GenerateRefreshToken();
 
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
@@ -90,7 +87,7 @@ namespace ArchitectureAI.Application.Services
                     Id = user.Id,
                     Email = user.Email,
                     Name = user.Name,
-                    Roles = roles.ToList(),
+                    Roles = [.. roles],
                     Permissions = permissions,
                 },
             };
@@ -237,10 +234,10 @@ namespace ArchitectureAI.Application.Services
                     permissions.AddRange(role.Permissions);
                 }
             }
-            permissions = permissions.Distinct().ToList();
+            permissions = [.. permissions.Distinct()];
 
-            var newToken = GenerateJwtToken(user, roles, permissions);
-            var newRefreshToken = GenerateRefreshToken();
+            var newToken = _tokenService.GenerateJwtToken(user, roles, permissions);
+            var newRefreshToken = _tokenService.GenerateRefreshToken();
 
             user.RefreshToken = newRefreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
@@ -269,57 +266,6 @@ namespace ArchitectureAI.Application.Services
                 _logger.LogInformation("User logged out: {UserId}", userId);
             }
             return Response<string>.Success("Logged out successfully");
-        }
-
-        private string GenerateJwtToken(
-            ApplicationUser user,
-            IList<string> roles,
-            IList<string> permissions
-        )
-        {
-            var projectId = _configuration["Firebase:ProjectId"] ?? "architecture-ai";
-            var issuer = $"https://securetoken.google.com/{projectId}";
-            var audience = projectId;
-
-            var secretKey =
-                _configuration["Jwt:Secret"] ?? "super_secret_key_must_be_long_enough_for_hs256";
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-            var claims = new List<Claim>
-            {
-                new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new(JwtRegisteredClaimNames.Email, user.Email),
-                new("name", user.Name),
-            };
-
-            foreach (var role in roles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role));
-            }
-
-            foreach (var permission in permissions)
-            {
-                claims.Add(new Claim("permission", permission));
-            }
-
-            var token = new JwtSecurityToken(
-                issuer: issuer,
-                audience: audience,
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(60),
-                signingCredentials: credentials
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
-        private string GenerateRefreshToken()
-        {
-            var randomNumber = new byte[32];
-            using var rng = RandomNumberGenerator.Create();
-            rng.GetBytes(randomNumber);
-            return Convert.ToBase64String(randomNumber);
         }
     }
 }

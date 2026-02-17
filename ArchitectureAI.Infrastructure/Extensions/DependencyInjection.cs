@@ -16,6 +16,18 @@ public static class DependencyInjection
         IConfiguration configuration
     )
     {
+        var projectId = Environment.GetEnvironmentVariable("FIREBASE_PROJECT_ID");
+        if (string.IsNullOrEmpty(projectId))
+        {
+             // Fallback to config for backward compatibility, but ideally should be Env Var
+             projectId = configuration["Firebase:ProjectId"];
+             
+             if (string.IsNullOrEmpty(projectId))
+             {
+                 throw new InvalidOperationException("Firebase Project ID is not configured (FIREBASE_PROJECT_ID).");
+             }
+        }
+
         // Change to Singleton as EncryptionService is stateless (key is immutable)
         services.AddSingleton<IEncryptionService, EncryptionService>();
 
@@ -38,6 +50,8 @@ public static class DependencyInjection
             .AddDefaultTokenProviders();
 
         services.AddScoped<IAuthenticationService, AuthenticationService>();
+        services.AddScoped<ITenantService, CurrentTenantService>();
+        services.AddScoped<ITokenService, TokenService>();
 
         // RBAC: Register Authorization Policies dynamically or statically
         services.AddAuthorization(options =>

@@ -2,7 +2,6 @@ using System.Threading.Channels;
 using ArchitectureAI.Application.Interfaces.Services;
 using ArchitectureAI.Domain.Audit;
 using ArchitectureAI.Persistence.Context;
-using Google.Cloud.Firestore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

@@ -1,7 +1,5 @@
 namespace ArchitectureAI.Application.Auth.DTOs
 {
-    using ArchitectureAI.Domain.Users;
-
     public class LoginResponse
     {
         public string Token { get; set; } = string.Empty;

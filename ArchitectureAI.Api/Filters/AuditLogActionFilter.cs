@@ -1,7 +1,5 @@
 using ArchitectureAI.Application.Interfaces.Services;
 using ArchitectureAI.Domain.Audit;
-using ArchitectureAI.Persistence.Context;
-using Google.Cloud.Firestore;
 using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace ArchitectureAI.Api.Filters;

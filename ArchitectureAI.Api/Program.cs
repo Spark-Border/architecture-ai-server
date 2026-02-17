@@ -4,12 +4,9 @@ using ArchitectureAI.Application.Services; // Updated namespace
 using ArchitectureAI.Infrastructure.Data;
 using ArchitectureAI.Infrastructure.Extensions;
 using ArchitectureAI.Persistence.Extensions;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
+using ArchitectureAI.Api.Filters;
 using NLog;
 using NLog.Web;
 
@@ -34,7 +31,7 @@ try
 
     builder.Services.AddControllers(options =>
     {
-        options.Filters.Add<ArchitectureAI.Api.Filters.AuditLogActionFilter>();
+        options.Filters.Add<AuditLogActionFilter>();
     });
 
     // 1. Security & Performance Services
@@ -43,11 +40,10 @@ try
         .AddJwtBearer(options =>
         {
             var projectId =
-                Environment.GetEnvironmentVariable("FIREBASE_PROJECT_ID")
-                ?? builder.Configuration["Firebase:ProjectId"];
+                Environment.GetEnvironmentVariable("FIREBASE_PROJECT_ID");
             options.Authority = $"https://securetoken.google.com/{projectId}";
             options.TokenValidationParameters =
-                new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                new TokenValidationParameters
                 {
                     ValidateIssuer = true,
                     ValidIssuer = $"https://securetoken.google.com/{projectId}",
@@ -94,7 +90,7 @@ try
 
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     // Register Global Garbage Collection / Cleanup Service
-    builder.Services.AddHostedService<ArchitectureAI.Application.Services.DataCleanupService>();
+    builder.Services.AddHostedService<DataCleanupService>();
 
     // Health Checks for Cloud Run / K8s
     builder.Services.AddHealthChecks();

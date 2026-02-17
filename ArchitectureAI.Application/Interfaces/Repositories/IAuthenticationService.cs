@@ -2,7 +2,6 @@ namespace ArchitectureAI.Application.Interfaces.Repositories
 {
     using ArchitectureAI.Application.Auth.DTOs;
     using ArchitectureAI.Common.Common.Responses;
-    using ArchitectureAI.Domain.Users;
 
     public interface IAuthenticationService
     {
