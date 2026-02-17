@@ -6,22 +6,15 @@ using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace ArchitectureAI.Api.Filters;
 
-public class AuditLogActionFilter : IAsyncActionFilter
+public class AuditLogActionFilter(
+    IAuditService auditService,
+    ITenantService tenantService,
+    ILogger<AuditLogActionFilter> logger
+) : IAsyncActionFilter
 {
-    private readonly IAuditService _auditService;
-    private readonly ITenantService _tenantService;
-    private readonly ILogger<AuditLogActionFilter> _logger;
-
-    public AuditLogActionFilter(
-        IAuditService auditService,
-        ITenantService tenantService,
-        ILogger<AuditLogActionFilter> logger
-    )
-    {
-        _auditService = auditService;
-        _tenantService = tenantService;
-        _logger = logger;
-    }
+    private readonly IAuditService _auditService = auditService;
+    private readonly ITenantService _tenantService = tenantService;
+    private readonly ILogger<AuditLogActionFilter> _logger = logger;
 
     public async Task OnActionExecutionAsync(
         ActionExecutingContext context,

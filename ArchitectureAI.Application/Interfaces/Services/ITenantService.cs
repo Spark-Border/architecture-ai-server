@@ -1,7 +1,8 @@
-namespace ArchitectureAI.Application.Interfaces.Services;
-
-public interface ITenantService
+namespace ArchitectureAI.Application.Interfaces.Services
 {
-    string? TenantId { get; }
-    void SetTenant(string tenantId);
+    public interface ITenantService
+    {
+        string? TenantId { get; }
+        void SetTenant(string tenantId);
+    }
 }

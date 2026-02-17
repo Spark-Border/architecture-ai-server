@@ -1,10 +1,13 @@
+using ArchitectureAI.Api.Middlewares;
+using ArchitectureAI.Application.Extensions;
 using ArchitectureAI.Application.Services; // Updated namespace
+using ArchitectureAI.Infrastructure.Data;
 using ArchitectureAI.Infrastructure.Extensions;
 using ArchitectureAI.Persistence.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.RateLimiting; // Added
-using Microsoft.Extensions.Configuration; // Aadded
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NLog;
@@ -27,6 +30,7 @@ try
     // Add services to the container.
     builder.Services.AddPersistenceServices(builder.Configuration);
     builder.Services.AddInfrastructureServices(builder.Configuration);
+    builder.Services.AddApplicationServices();
 
     builder.Services.AddControllers(options =>
     {
@@ -107,7 +111,17 @@ try
         app.UseSwaggerUI();
     }
 
+    // Seed Data
+    using (var scope = app.Services.CreateScope())
+    {
+        var seeder = scope.ServiceProvider.GetRequiredService<DataSeeder>();
+        await seeder.SeedAsync();
+    }
+
     app.UseHttpsRedirection();
+
+    // Global Exception Handler
+    app.UseMiddleware<ExceptionHandlingMiddleware>();
 
     // Security Headers (Simple manual implementation for now, or use library)
     app.Use(

@@ -7,15 +7,10 @@ using Microsoft.AspNetCore.Http;
 
 namespace ArchitectureAI.Application.Services
 {
-    public class CurrentTenantService : ITenantService
+    public class CurrentTenantService(IHttpContextAccessor httpContextAccessor) : ITenantService
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private string? _tenantId;
-
-        public CurrentTenantService(IHttpContextAccessor httpContextAccessor)
-        {
-            _httpContextAccessor = httpContextAccessor;
-        }
 
         public string? TenantId
         {
