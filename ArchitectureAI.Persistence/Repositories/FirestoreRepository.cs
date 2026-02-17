@@ -76,7 +76,68 @@ public class FirestoreRepository<T> : IGenericRepository<T>
 
     public async Task<T> FindAsync(Expression<Func<T, bool>> expression)
     {
-        throw new NotImplementedException("Complex FindAsync not supported. Use GetByIdAsync.");
+        // Simple Expression Parser for "x => x.Prop == Value"
+        if (expression.Body is BinaryExpression binaryExpression
+            && binaryExpression.NodeType == ExpressionType.Equal)
+        {
+            var left = binaryExpression.Left;
+            var right = binaryExpression.Right;
+
+            string propertyName = null;
+            object value = null;
+
+            // Case 1: x.Prop == Value
+            if (left is MemberExpression memberLeft && right is ConstantExpression constantRight)
+            {
+                propertyName = memberLeft.Member.Name;
+                value = constantRight.Value;
+            }
+            // Case 2: Value == x.Prop
+            else if (left is ConstantExpression constantLeft && right is MemberExpression memberRight)
+            {
+                propertyName = memberRight.Member.Name;
+                value = constantLeft.Value;
+            }
+            // Case 3: Handle captured variables (closures)
+            else if (left is MemberExpression memberLeftClosure && right is MemberExpression memberRightClosure) 
+            {
+                 // Check which side is the parameter
+                 if (memberLeftClosure.Expression is ParameterExpression) 
+                 {
+                     propertyName = memberLeftClosure.Member.Name;
+                     value = GetValue(memberRightClosure);
+                 }
+                 else if (memberRightClosure.Expression is ParameterExpression)
+                 {
+                     propertyName = memberRightClosure.Member.Name;
+                     value = GetValue(memberLeftClosure);
+                 }
+            }
+
+            if (!string.IsNullOrEmpty(propertyName))
+            {
+                var query = _collection.WhereEqualTo(propertyName, value);
+                // Enforce Tenant Isolation
+                query = query.WhereEqualTo(nameof(Entity.TenantId), _tenantId);
+
+                var snapshot = await query.Limit(1).GetSnapshotAsync();
+                if (snapshot.Count > 0)
+                {
+                    return snapshot.Documents[0].ConvertTo<T>();
+                }
+                return null;
+            }
+        }
+
+        throw new NotImplementedException("Only simple equality queries (e.g. x => x.Name == 'Value') are supported in FindAsync for now.");
+    }
+
+    private object GetValue(MemberExpression member)
+    {
+        var objectMember = Expression.Convert(member, typeof(object));
+        var getterLambda = Expression.Lambda<Func<object>>(objectMember);
+        var getter = getterLambda.Compile();
+        return getter();
     }
 
     public async Task<T> GetByIdAsync(string id)

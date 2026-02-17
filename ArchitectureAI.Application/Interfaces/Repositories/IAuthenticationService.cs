@@ -12,6 +12,6 @@ namespace ArchitectureAI.Application.Interfaces.Repositories
         Task<Response<string>> ForgotPasswordAsync(string email);
         Task<Response<string>> ResetPasswordAsync(string email, string token, string newPassword);
         Task<Response<RefreshTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request);
-        Task<Response<string>> LogoutAsync(Guid userId);
+        Task<Response<string>> LogoutAsync(string userId);
     }
 }

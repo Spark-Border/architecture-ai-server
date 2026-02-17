@@ -21,6 +21,33 @@ try
     builder.Logging.ClearProviders();
     builder.Host.UseNLog();
 
+    // Load .env file manually to avoid dependency issues
+    var root = Directory.GetCurrentDirectory();
+    var dotenvPath = Path.Combine(root, ".env");
+    if (!File.Exists(dotenvPath))
+    {
+         var parent = Directory.GetParent(root)?.FullName;
+         if (parent != null) dotenvPath = Path.Combine(parent, ".env");
+    }
+
+    if (File.Exists(dotenvPath))
+    {
+        foreach (var line in File.ReadAllLines(dotenvPath))
+        {
+            var parts = line.Split('=', 2, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length != 2) continue;
+            var key = parts[0].Trim();
+            var value = parts[1].Trim();
+            // Remove quotes if present
+            if (value.StartsWith('"') && value.EndsWith('"'))
+            {
+                value = value.Substring(1, value.Length - 2);
+            }
+            Environment.SetEnvironmentVariable(key, value);
+            Environment.SetEnvironmentVariable(key, value);
+        }
+    }
+
     // Ensure Environment Variables are loaded (defaults to true in CreateBuilder, but good to be explicit for hierarchy)
     builder.Configuration.AddEnvironmentVariables();
 
@@ -96,15 +123,22 @@ try
     builder.Services.AddHealthChecks();
 
     builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
+    builder.Services.AddSwaggerGen(c =>
+    {
+        c.CustomSchemaIds(x => x.FullName); // Avoid "Conflicting schemaIds" error
+    });
 
     var app = builder.Build();
+
+    // Global Exception Handler - Must be first to catch exceptions from downstream middleware
+    app.UseMiddleware<ExceptionHandlingMiddleware>();
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
     {
+        app.UseDeveloperExceptionPage(); // Detailed errors in Dev
         app.UseSwagger();
-        app.UseSwaggerUI();
+        app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ArchitectureAI API v1"));
     }
 
     // Seed Data
@@ -115,9 +149,6 @@ try
     }
 
     app.UseHttpsRedirection();
-
-    // Global Exception Handler
-    app.UseMiddleware<ExceptionHandlingMiddleware>();
 
     // Security Headers (Simple manual implementation for now, or use library)
     app.Use(
@@ -146,6 +177,10 @@ catch (Exception exception)
 {
     // NLog: catch setup errors
     logger.Error(exception, "Stopped program because of exception");
+    // Ensure error is visible in console even if NLog fails
+    Console.WriteLine($"\n\nCRITICAL ERROR: {exception} \n\n");
+    logger.Error($"Application startup failed: {exception.Message}");
+    logger.Error(exception.StackTrace!);
     throw;
 }
 finally

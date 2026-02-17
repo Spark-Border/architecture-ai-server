@@ -84,7 +84,7 @@ namespace ArchitectureAI.Application.Services
                 RefreshToken = refreshToken,
                 User = new UserDto
                 {
-                    Id = user.Id,
+                    Id = user.Id, // Now string
                     Email = user.Email,
                     Name = user.Name,
                     Roles = [.. roles],
@@ -94,6 +94,8 @@ namespace ArchitectureAI.Application.Services
 
             return Response<LoginResponse>.Success(response, "Login successful");
         }
+
+        // ... existing methods ...
 
         public async Task<Response<RegisterResponse>> RegisterAsync(RegisterRequest request)
         {
@@ -254,9 +256,9 @@ namespace ArchitectureAI.Application.Services
             return Response<RefreshTokenResponse>.Success(response, "Token refreshed");
         }
 
-        public async Task<Response<string>> LogoutAsync(Guid userId)
+        public async Task<Response<string>> LogoutAsync(string userId)
         {
-            var user = await _userManager.FindByIdAsync(userId.ToString());
+            var user = await _userManager.FindByIdAsync(userId);
             if (user != null)
             {
                 user.RefreshToken = null;

@@ -1,4 +1,5 @@
 using ArchitectureAI.Application.Constants;
+using ArchitectureAI.Application.Interfaces.Services;
 using ArchitectureAI.Domain.Users;
 using Microsoft.AspNetCore.Identity;
 
@@ -6,14 +7,19 @@ namespace ArchitectureAI.Infrastructure.Data;
 
 public class DataSeeder(
     RoleManager<ApplicationRole> roleManager,
-    UserManager<ApplicationUser> userManager
+    UserManager<ApplicationUser> userManager,
+    ITenantService tenantService
 )
 {
     private readonly RoleManager<ApplicationRole> _roleManager = roleManager;
     private readonly UserManager<ApplicationUser> _userManager = userManager;
+    private readonly ITenantService _tenantService = tenantService;
 
     public async Task SeedAsync()
     {
+        // Set System Tenant Context for Seeding
+        _tenantService.SetTenant("system");
+
         await SeedRolesAsync();
         await SeedUsersAsync();
     }

@@ -59,7 +59,7 @@ public class AuthController(IAuthenticationService authService) : ControllerBase
         return StatusCode(response.StatusCode, response);
     }
 
-    [HttpPost("refresh")]
+    [HttpPost("refresh-token")]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
     {
         var response = await _authService.RefreshTokenAsync(request);
@@ -74,9 +74,9 @@ public class AuthController(IAuthenticationService authService) : ControllerBase
             User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
             ?? User.FindFirst("sub")?.Value;
 
-        if (Guid.TryParse(userIdString, out var userId))
+        if (!string.IsNullOrEmpty(userIdString))
         {
-            var response = await _authService.LogoutAsync(userId);
+            var response = await _authService.LogoutAsync(userIdString);
             return StatusCode(response.StatusCode, response);
         }
 
