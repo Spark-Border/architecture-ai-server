@@ -19,20 +19,7 @@ public class FirestoreDbContext
             );
         }
 
-        // Ensure GOOGLE_APPLICATION_CREDENTIALS is set in environment or handled via default auth
-        var emulatorHost = Environment.GetEnvironmentVariable("FIRESTORE_EMULATOR_HOST");
-        if (!string.IsNullOrEmpty(emulatorHost))
-        {
-            _firestoreDb = new FirestoreDbBuilder
-            {
-                ProjectId = projectId,
-                EmulatorDetection = Google.Api.Gax.EmulatorDetection.EmulatorOnly,
-            }.Build();
-        }
-        else
-        {
-            _firestoreDb = FirestoreDb.Create(projectId);
-        }
+        _firestoreDb = FirestoreDb.Create(projectId);
     }
 
     public CollectionReference Collection(string collectionName)
