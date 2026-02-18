@@ -64,25 +64,25 @@ public class DataSeeder(
                 Name = "Manager",
                 Description = "Project Manager",
                 IsSystemRole = false,
-                Permissions = new List<string>
-                {
+                Permissions =
+                [
                     Permissions.Users.View,
                     Permissions.Projects.View,
                     Permissions.Projects.Create,
                     Permissions.Projects.Edit,
                     Permissions.Roles.View,
-                },
+                ],
             },
             new()
             {
                 Name = "Viewer",
                 Description = "Read-only access",
                 IsSystemRole = true,
-                Permissions = new List<string>
-                {
+                Permissions =
+                [
                     Permissions.Users.View,
                     Permissions.Projects.View,
-                },
+                ],
             },
         };
 
@@ -94,13 +94,11 @@ public class DataSeeder(
             }
             else
             {
-                // Optional: Update permissions for existing system roles to ensure they are up to date with code constants
                 if (role.IsSystemRole)
                 {
                     var existingRole = await _roleManager.FindByNameAsync(role.Name);
                     if (existingRole != null)
                     {
-                        // Merge or overwrite permissions? Let's overwrite for system roles to match code
                         existingRole.Permissions = role.Permissions;
                         await _roleManager.UpdateAsync(existingRole);
                     }

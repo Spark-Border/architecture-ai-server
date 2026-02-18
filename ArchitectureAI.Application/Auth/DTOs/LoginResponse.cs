@@ -13,7 +13,7 @@ namespace ArchitectureAI.Application.Auth.DTOs
         public string Email { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
 
-        public List<string> Roles { get; set; } = new();
-        public List<string> Permissions { get; set; } = new();
+        public List<string> Roles { get; set; } = [];
+        public List<string> Permissions { get; set; } = [];
     }
 }

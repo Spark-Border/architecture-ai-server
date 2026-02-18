@@ -7,7 +7,6 @@
   <ItemGroup>
     <ProjectReference Include="..\ArchitectureAI.Application\ArchitectureAI.Application.csproj" />
     <ProjectReference Include="..\ArchitectureAI.Domain\ArchitectureAI.Domain.csproj" />
-    <ProjectReference Include="..\ArchitectureAI.Infrastructure\ArchitectureAI.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Google.Cloud.Firestore" Version="4.1.0" />

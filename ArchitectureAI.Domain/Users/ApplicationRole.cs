@@ -6,8 +6,6 @@ namespace ArchitectureAI.Domain.Users;
 [FirestoreData]
 public class ApplicationRole : Entity
 {
-    // public Guid Id { get; set; } = Guid.NewGuid(); // Inherited from Entity (as string)
-
     [FirestoreProperty]
     public string Name { get; set; } = string.Empty;
 
@@ -25,5 +23,5 @@ public class ApplicationRole : Entity
 
     // GCP-style Permissions: "compute.instances.create", "users.view", etc.
     [FirestoreProperty]
-    public List<string> Permissions { get; set; } = new();
+    public List<string> Permissions { get; set; } = [];
 }

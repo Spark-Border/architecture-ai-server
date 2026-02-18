@@ -6,8 +6,6 @@ namespace ArchitectureAI.Domain.Users
     [FirestoreData]
     public class ApplicationUser : Entity
     {
-        // public Guid Id { get; set; } = Guid.NewGuid(); // Inherited from Entity (as string)
-
         [FirestoreProperty]
         public string UserName { get; set; } = string.Empty;
 
@@ -43,6 +41,6 @@ namespace ArchitectureAI.Domain.Users
 
         // RBAC: List of Role IDs assigned to this user
         [FirestoreProperty]
-        public List<string> Roles { get; set; } = new();
+        public List<string> Roles { get; set; } = [];
     }
 }

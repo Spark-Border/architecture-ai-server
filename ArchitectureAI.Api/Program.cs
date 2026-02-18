@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using ArchitectureAI.Api.Filters;
 using NLog;
 using NLog.Web;
+using Finbuckle.MultiTenant;
 
 // Early init of NLog to allow logging "during" startup
 var logger = NLog.LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
@@ -115,7 +116,6 @@ try
         http.AddStandardResilienceHandler();
     });
 
-    // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     // Register Global Garbage Collection / Cleanup Service
     builder.Services.AddHostedService<DataCleanupService>();
 
@@ -165,6 +165,7 @@ try
     app.UseRateLimiter();
     app.UseOutputCache();
 
+    app.UseMultiTenant();
     app.UseAuthentication();
     app.UseAuthorization();
 

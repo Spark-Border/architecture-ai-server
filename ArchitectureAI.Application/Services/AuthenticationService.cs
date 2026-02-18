@@ -56,7 +56,6 @@ namespace ArchitectureAI.Application.Services
                 return Response<LoginResponse>.Failure("Invalid credentials", 401);
             }
 
-            // SET TENANT CONTEXT
             if (!string.IsNullOrEmpty(user.TenantId))
             {
                 _tenantService.SetTenant(user.TenantId);
@@ -79,7 +78,6 @@ namespace ArchitectureAI.Application.Services
             
             await _userManager.UpdateAsync(user);
             
-            // Explicit Audit Log for Success
             await LogAuthEventAsync("Login", $"User {user.Email} logged in successfully.", user.TenantId, user.Email);
 
             _logger.LogInformation("Login successful for user: {Email}", request.Email);
@@ -152,7 +150,6 @@ namespace ArchitectureAI.Application.Services
                 return Response<RegisterResponse>.Failure($"Registration failed: {errors}", 400);
             }
 
-            // Explicit Audit Log for Registration
             await LogAuthEventAsync("Register", $"New user registered. Created Organization ID: {user.TenantId}", user.TenantId, user.Email);
 
             _logger.LogInformation("User created successfully: {Email} (Org: {TenantId})", request.Email, user.TenantId);
@@ -245,10 +242,6 @@ namespace ArchitectureAI.Application.Services
         {
             _logger.LogInformation("Attempting token refresh.");
             
-            // Note: FindAsync uses default tenant "system" because request is unauthenticated here usually
-            // However, CurrentTenantService might resolve from header if provided. Alternatively, we assume "system" lookup.
-            // If the user's RefreshToken is unique globally, this works.
-            // If the user's RefreshToken is unique globally, this works.
             var user = await _userRepository.FindAsync(u => u.RefreshToken == request.RefreshToken, ignoreTenantId: true);
             if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {
@@ -256,7 +249,6 @@ namespace ArchitectureAI.Application.Services
                 return Response<RefreshTokenResponse>.Failure("Invalid token", 401);
             }
 
-            // SET TENANT CONTEXT for Audit Trail consistency
             if (!string.IsNullOrEmpty(user.TenantId))
             {
                 _tenantService.SetTenant(user.TenantId);
@@ -280,7 +272,6 @@ namespace ArchitectureAI.Application.Services
             user.RefreshToken = newRefreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
             
-            // Audit Log will now use user's TenantId
             await _userManager.UpdateAsync(user);
 
             _logger.LogInformation("Token refresh successful for user: {Email}", user.Email);
@@ -307,8 +298,7 @@ namespace ArchitectureAI.Application.Services
             }
             return Response<string>.Success("Logged out successfully");
         }
-        // Helper to generate UNIQUE 12-digit Org ID (like AWS/GCP)
-        // Uses Crypto RNG + Database Check to ensure no collisions.
+        
         private async Task<string> GenerateUniqueTenantIdAsync()
         {
             const int MaxRetries = 5;
@@ -316,10 +306,6 @@ namespace ArchitectureAI.Application.Services
             {
                 var candidateId = GenerateCryptoRandomId();
                 
-                // Check for collision
-                // We must ensure no other user has this TenantId. 
-                // Since 1 user = 1 tenant owner initially, checking users is a proxy for checking tenants.
-                // ideally we check a specific 'Tenants' collection, but for now user.TenantId is the source of truth.
                 var count = await _userRepository.CountAsync(u => u.TenantId == candidateId);
                 if (count == 0)
                 {
@@ -334,13 +320,10 @@ namespace ArchitectureAI.Application.Services
 
         private static string GenerateCryptoRandomId()
         {
-            // Cryptographically secure RNG
-            // 12 digits = 10^12 combinations.
             const int length = 12;
             var chars = new char[length];
             var allowed = "0123456789";
             
-            // Use RandomNumberGenerator for security
             var data = new byte[length];
             using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
             {
@@ -349,8 +332,6 @@ namespace ArchitectureAI.Application.Services
 
             for (int i = 0; i < length; i++)
             {
-                // Modulo bias is negligible for 10 chars vs 256 bytes, but strictly speaking exists.
-                // For TenantID it is acceptable.
                 chars[i] = allowed[data[i] % allowed.Length];
             }
 

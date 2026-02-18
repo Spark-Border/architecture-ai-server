@@ -28,8 +28,7 @@ namespace ArchitectureAI.Application.Constants
         }
 
         public static List<string> All =>
-            new()
-            {
+            [
                 Users.View,
                 Users.Create,
                 Users.Edit,
@@ -42,6 +41,6 @@ namespace ArchitectureAI.Application.Constants
                 Projects.Create,
                 Projects.Edit,
                 Projects.Delete,
-            };
+            ];
     }
 }

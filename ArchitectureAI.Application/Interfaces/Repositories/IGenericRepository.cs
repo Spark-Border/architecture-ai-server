@@ -8,7 +8,7 @@ namespace ArchitectureAI.Application.Interfaces.Repositories
         public int PageSize { get; set; }
         public int TotalCount { get; set; }
         public int TotalPages { get; set; }
-        public IEnumerable<T> Items { get; set; } = new List<T>();
+        public IEnumerable<T> Items { get; set; } = [];
     }
 
     public interface IGenericRepository<T>
@@ -33,8 +33,8 @@ namespace ArchitectureAI.Application.Interfaces.Repositories
         Task<PagedResult<T>> GetPagedAsync(
             int page,
             int pageSize,
-            Expression<Func<T, bool>> filter = null,
-            Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+            Expression<Func<T, bool>>? filter = null,
+            Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
             params string[] includeProperties
         );
     }
