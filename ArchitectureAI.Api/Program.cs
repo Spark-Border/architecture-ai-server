@@ -1,12 +1,13 @@
+using System.Text;
 using ArchitectureAI.Api.Middlewares;
 using ArchitectureAI.Application.Extensions;
-using ArchitectureAI.Application.Services; // Updated namespace
+using ArchitectureAI.Application.Services;
 using ArchitectureAI.Infrastructure.Data;
 using ArchitectureAI.Infrastructure.Extensions;
 using ArchitectureAI.Persistence.Extensions;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models; // Added this
+using Microsoft.OpenApi.Models;
 using ArchitectureAI.Api.Filters;
 using NLog;
 using NLog.Web;
@@ -25,11 +26,21 @@ try
 
     // Load .env file manually to avoid dependency issues
     var root = Directory.GetCurrentDirectory();
+    
     var dotenvPath = Path.Combine(root, ".env");
     if (!File.Exists(dotenvPath))
     {
-         var parent = Directory.GetParent(root)?.FullName;
-         if (parent != null) dotenvPath = Path.Combine(parent, ".env");
+         // Try checking ArchitectureAI.Api subfolder if running from root
+         var apiEnv = Path.Combine(root, "ArchitectureAI.Api", ".env");
+         if (File.Exists(apiEnv))
+         {
+             dotenvPath = apiEnv;
+         }
+         else
+         {
+             var parent = Directory.GetParent(root)?.FullName;
+             if (parent != null) dotenvPath = Path.Combine(parent, ".env");
+         }
     }
 
     if (File.Exists(dotenvPath))
@@ -45,7 +56,6 @@ try
             {
                 value = value.Substring(1, value.Length - 2);
             }
-            Environment.SetEnvironmentVariable(key, value);
             Environment.SetEnvironmentVariable(key, value);
         }
     }
@@ -65,12 +75,16 @@ try
 
     // 1. Security & Performance Services
     builder
-        .Services.AddAuthentication()
+        .Services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+        })
         .AddJwtBearer(options =>
         {
-            var projectId =
-                Environment.GetEnvironmentVariable("FIREBASE_PROJECT_ID");
-            options.Authority = $"https://securetoken.google.com/{projectId}";
+            var projectId = Environment.GetEnvironmentVariable("FIREBASE_PROJECT_ID");
+            var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET");
+
             options.TokenValidationParameters =
                 new TokenValidationParameters
                 {
@@ -79,7 +93,21 @@ try
                     ValidateAudience = true,
                     ValidAudience = projectId,
                     ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret!))
                 };
+            
+            options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+            {
+                OnAuthenticationFailed = context =>
+                {
+                    return Task.CompletedTask;
+                },
+                OnTokenValidated = context =>
+                {
+                    return Task.CompletedTask;
+                }
+            };
         });
 
     builder.Services.AddResponseCompression(options =>
@@ -208,8 +236,6 @@ catch (Exception exception)
 {
     // NLog: catch setup errors
     logger.Error(exception, "Stopped program because of exception");
-    // Ensure error is visible in console even if NLog fails
-    Console.WriteLine($"\n\nCRITICAL ERROR: {exception} \n\n");
     logger.Error($"Application startup failed: {exception.Message}");
     logger.Error(exception.StackTrace!);
     throw;
