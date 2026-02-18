@@ -49,7 +49,7 @@ public class FirestoreUserStore(IGenericRepository<ApplicationUser> userReposito
         CancellationToken cancellationToken
     )
     {
-        return await _userRepository.FindAsync(u => u.NormalizedUserName == normalizedUserName);
+        return await _userRepository.FindAsync(u => u.NormalizedUserName == normalizedUserName, ignoreTenantId: true);
     }
 
     public Task<string?> GetNormalizedUserNameAsync(
@@ -129,7 +129,7 @@ public class FirestoreUserStore(IGenericRepository<ApplicationUser> userReposito
         CancellationToken cancellationToken
     )
     {
-        return await _userRepository.FindAsync(u => u.NormalizedEmail == normalizedEmail);
+        return await _userRepository.FindAsync(u => u.NormalizedEmail == normalizedEmail, ignoreTenantId: true);
     }
 
     public Task<string?> GetEmailAsync(ApplicationUser user, CancellationToken cancellationToken)
