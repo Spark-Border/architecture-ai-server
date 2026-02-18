@@ -55,31 +55,35 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  dependency-review:
-    name: Dependency Review (PR only)
-    if: github.event_name == 'pull_request'
+  sast-security-scan:
+    name: SAST (Security Code Scan)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v4
-
-  codeql:
-    name: CodeQL (SAST)
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v4
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
-          languages: csharp
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Install Security Code Scan
+        run: dotnet tool install --global security-code-scan.tool
+      - name: Run Security Code Scan
+        run: security-code-scan --fail-any ArchitectureAI.slnx
+
+  sast-snyk:
+    name: SAST & SCA (Snyk)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/dotnet@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
 
   semgrep:
     name: Semgrep (SAST)
@@ -104,6 +108,20 @@ jobs:
       - name: Audit Packages
         run: dotnet list package --vulnerable --include-transitive
 
+  license-scan:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Install dotnet-project-licenses
+        run: dotnet tool install --global dotnet-project-licenses
+      - name: Check Licenses
+        run: dotnet-project-licenses -i . --check-unallowed-licenses "GPL,AGPL"
+
   dast:
     name: DAST (OWASP ZAP)
     runs-on: ubuntu-latest
@@ -117,7 +135,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 8081:8080 # Map host 8081 to emulator 8080
+          - 8081:8080 
           - 4000:4000
         env:
           GCP_PROJECT: architecture-ai
@@ -129,7 +147,7 @@ jobs:
           docker build -t test-app -f ArchitectureAI.Api/Dockerfile .
           docker run -d --network="host" -e ASPNETCORE_ENVIRONMENT=Development -e FIRESTORE_EMULATOR_HOST=localhost:8081 --name test-app test-app
           echo "Waiting for app to start..."
-          sleep 10
+          sleep 15
           docker logs test-app
 
       - name: ZAP Scan
@@ -173,7 +191,7 @@ jobs:
 
   deploy-gcp:
     name: Deploy to Cloud Run
-    needs: [build, secrets-scan, codeql, semgrep, deps-audit, container-security, iac-scan, dast]
+    needs: [build, secrets-scan, sast-security-scan, sast-snyk, semgrep, deps-audit, license-scan, container-security, iac-scan, dast]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
