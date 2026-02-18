@@ -1,4 +1,4 @@
-namespace ArchitectureAI.Application.Auth.DTOs
+namespace ArchitectureAI.Application.Auth.Responses
 {
     public class LoginResponse
     {

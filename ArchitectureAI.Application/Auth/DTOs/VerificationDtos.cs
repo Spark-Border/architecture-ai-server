@@ -4,9 +4,4 @@ namespace ArchitectureAI.Application.Auth.DTOs
     {
         public required string Email { get; set; }
     }
-
-    public class VerificationStatusResponse
-    {
-        public bool Verified { get; set; }
-    }
 }

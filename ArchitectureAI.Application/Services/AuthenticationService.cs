@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using ArchitectureAI.Application.Auth.DTOs;
+using ArchitectureAI.Application.Auth.Responses;
 using ArchitectureAI.Application.Interfaces.Repositories;
 using ArchitectureAI.Application.Interfaces.Services;
 using ArchitectureAI.Common.Common.Responses;
@@ -203,13 +204,12 @@ namespace ArchitectureAI.Application.Services
 
             var response = new RegisterResponse
             {
-                Message = "Account created successfully. Please verify your email.",
                 UserId = user.Id,
             };
 
             return Response<RegisterResponse>.Success(
                 response,
-                "User registered successfully",
+                "Account created successfully. Please verify your email.",
                 201
             );
         }
