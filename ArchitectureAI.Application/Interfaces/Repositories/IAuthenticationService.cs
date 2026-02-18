@@ -9,6 +9,7 @@ namespace ArchitectureAI.Application.Interfaces.Repositories
         Task<Response<LoginResponse>> LoginAsync(LoginRequest request);
         Task<Response<RegisterResponse>> RegisterAsync(RegisterRequest request);
         Task<Response<string>> ResendVerificationEmailAsync(string email);
+        Task<Response<string>> VerifyEmailAsync(string userId, string token);
         Task<Response<bool>> CheckVerificationStatusAsync(string email);
         Task<Response<string>> ForgotPasswordAsync(string email);
         Task<Response<string>> ResetPasswordAsync(string email, string token, string newPassword);

@@ -25,6 +25,17 @@ public class AuthController(IAuthenticationService authService) : ControllerBase
         return StatusCode(response.StatusCode, response);
     }
 
+    [HttpGet("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromQuery] string userId, [FromQuery] string token)
+    {
+        var response = await _authService.VerifyEmailAsync(userId, token);
+        if (response.StatusCode == 200)
+        {
+             return Ok("Email verified successfully! You can now close this window and login.");
+        }
+        return BadRequest(response.Message);
+    }
+
     [HttpPost("verify-email/resend")]
     public async Task<IActionResult> ResendVerificationEmail(
         [FromBody] ResendVerificationRequest request

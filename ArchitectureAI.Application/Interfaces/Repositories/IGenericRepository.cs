@@ -23,7 +23,7 @@ namespace ArchitectureAI.Application.Interfaces.Repositories
             params string[] includeProperties
         );
         Task<IEnumerable<T>> GetAllAsync(params string[] includeProperties);
-        Task<T> GetByIdAsync(string id);
+        Task<T?> GetByIdAsync(string id, bool ignoreTenantId = false);
         Task<int> RemoveAsync(T entity);
         Task RemoveRangeAsync(IEnumerable<T> entities);
         Task UpdateAsync(T entity);

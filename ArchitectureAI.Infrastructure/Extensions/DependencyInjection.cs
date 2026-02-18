@@ -71,7 +71,7 @@ public static class DependencyInjection
             .WithStore<Tenancy.FirestoreMultiTenantStore>(ServiceLifetime.Scoped)
             .WithHeaderStrategy("X-Tenant-ID")
             .WithClaimStrategy("tenant_id")
-            .WithStaticStrategy("system");
+            .WithStaticStrategy("System");
 
         return services;
     }

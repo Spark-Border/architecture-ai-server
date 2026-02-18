@@ -41,7 +41,7 @@ public class FirestoreUserStore(IGenericRepository<ApplicationUser> userReposito
         CancellationToken cancellationToken
     )
     {
-        return await _userRepository.GetByIdAsync(userId);
+        return await _userRepository.GetByIdAsync(userId, ignoreTenantId: true);
     }
 
     public async Task<ApplicationUser?> FindByNameAsync(

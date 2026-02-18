@@ -178,7 +178,7 @@ public class FirestoreRepository<T> : IGenericRepository<T>
         return getter();
     }
 
-    public async Task<T?> GetByIdAsync(string id)
+    public async Task<T?> GetByIdAsync(string id, bool ignoreTenantId = false)
     {
         var docRef = _collection.Document(id);
         var snapshot = await docRef.GetSnapshotAsync();
@@ -187,7 +187,7 @@ public class FirestoreRepository<T> : IGenericRepository<T>
         {
             var entity = snapshot.ConvertTo<T>();
             // Enforce Tenant Isolation on Read
-            if (TenantId != null && entity.TenantId == TenantId)
+            if (ignoreTenantId || (TenantId != null && entity.TenantId == TenantId))
             {
                 return entity;
             }

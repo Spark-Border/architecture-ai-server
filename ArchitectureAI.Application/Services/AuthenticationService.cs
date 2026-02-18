@@ -23,7 +23,6 @@ namespace ArchitectureAI.Application.Services
         ITenantService tenantService,
         IAuditService auditService,
         IEmailService emailService,
-        IHttpContextAccessor httpContextAccessor,
         IConfiguration configuration,
         ILogger<AuthenticationService> logger
     ) : IAuthenticationService
@@ -36,7 +35,6 @@ namespace ArchitectureAI.Application.Services
         private readonly ITenantService _tenantService = tenantService;
         private readonly IAuditService _auditService = auditService;
         private readonly IEmailService _emailService = emailService;
-        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IConfiguration _configuration = configuration;
         private readonly ILogger<AuthenticationService> _logger = logger;
 
@@ -51,11 +49,13 @@ namespace ArchitectureAI.Application.Services
                     "Login failed for user: {Email}. User not found.",
                     request.Email
                 );
-                await LogAuthEventAsync(
+                await _auditService.LogSecurityEventAsync(
                     "Login Failed",
                     $"Login attempted for non-existent user: {request.Email}",
-                    "system",
-                    "Anonymous"
+                    "System",
+                    "Anonymous",
+                    "Security",
+                    "Authentication"
                 );
                 return Response<LoginResponse>.Failure("Invalid credentials", 401);
             }
@@ -71,11 +71,13 @@ namespace ArchitectureAI.Application.Services
                     "Login failed for user: {Email}. Invalid password.",
                     request.Email
                 );
-                await LogAuthEventAsync(
+                await _auditService.LogSecurityEventAsync(
                     "Login Failed",
                     $"Invalid password provided for user: {request.Email}",
-                    user.TenantId ?? "system",
-                    user.Email
+                    user.TenantId ?? "System",
+                    user.Email,
+                    "Security",
+                    "Authentication"
                 );
                 return Response<LoginResponse>.Failure("Invalid credentials", 401);
             }
@@ -103,11 +105,13 @@ namespace ArchitectureAI.Application.Services
 
             await _userManager.UpdateAsync(user);
 
-            await LogAuthEventAsync(
+            await _auditService.LogSecurityEventAsync(
                 "Login",
                 $"User {user.Email} logged in successfully.",
                 user.TenantId,
-                user.Email
+                user.Email,
+                "Security",
+                "Authentication"
             );
 
             _logger.LogInformation("Login successful for user: {Email}", request.Email);
@@ -129,34 +133,7 @@ namespace ArchitectureAI.Application.Services
             return Response<LoginResponse>.Success(response, "Login successful");
         }
 
-        // Helper for cleaner Audit Logging with IP capture
-        private async Task LogAuthEventAsync(
-            string action,
-            string description,
-            string tenantId,
-            string userEmail
-        )
-        {
-            var ipAddress =
-                _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
 
-            await _auditService.EnqueueAuditLogAsync(
-                new Domain.Audit.AuditTrail
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    TenantId = tenantId ?? "system",
-                    ActionName = action,
-                    ActionDescription = description,
-                    Type = "Security",
-                    Module = "Authentication",
-                    LoggedInUser = userEmail,
-                    CreatedBy = userEmail, // Or System
-                    ActionTime = DateTime.UtcNow,
-                    DateCreated = DateTime.UtcNow,
-                    Origin = ipAddress!,
-                }
-            );
-        }
 
         public async Task<Response<RegisterResponse>> RegisterAsync(RegisterRequest request)
         {
@@ -192,11 +169,13 @@ namespace ArchitectureAI.Application.Services
                 return Response<RegisterResponse>.Failure($"Registration failed: {errors}", 400);
             }
 
-            await LogAuthEventAsync(
+            await _auditService.LogSecurityEventAsync(
                 "Register",
                 $"New user registered. Created Organization ID: {user.TenantId}",
                 user.TenantId,
-                user.Email
+                user.Email,
+                "Security",
+                "Authentication"
             );
 
             _logger.LogInformation(
@@ -207,8 +186,7 @@ namespace ArchitectureAI.Application.Services
 
             // Send Welcome / Verification Email
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            // Assuming frontend URL structure
-            var verificationLink = $"https://app.architectureai.com/verify-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+            var verificationLink = $"{_configuration["AppUrl"] ?? "https://localhost:7148"}/api/auth/verify-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
             var emailHtml = Common.EmailTemplates.GetVerifyEmail(user.Name, verificationLink);
             
             await _emailService.SendEmailAsync(user.Email, "Welcome to ArchitectureAI - Verify Your Email", emailHtml);
@@ -250,6 +228,26 @@ namespace ArchitectureAI.Application.Services
             
             _logger.LogInformation("Verification email sent to: {Email}", email);
             return Response<string>.Success("Verification email sent.");
+        }
+
+        public async Task<Response<string>> VerifyEmailAsync(string userId, string token)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return Response<string>.Failure("User not found.", 404);
+
+            var result = await _userManager.ConfirmEmailAsync(user, token);
+            if (result.Succeeded)
+            {
+                // Send Dashboard Welcome Email
+                var dashboardLink = $"{_configuration["AppUrl"] ?? "https://localhost:7148"}/dashboard";
+                var welcomeHtml = Common.EmailTemplates.GetDashboardWelcomeEmail(user.Name, dashboardLink);
+                await _emailService.SendEmailAsync(user.Email, "Welcome to ArchitectureAI", welcomeHtml);
+
+                return Response<string>.Success("Email verified successfully!", "Email verified successfully!");
+            }
+
+            return Response<string>.Failure("Email verification failed.", 403);
         }
 
         public async Task<Response<bool>> CheckVerificationStatusAsync(string email)
@@ -304,6 +302,11 @@ namespace ArchitectureAI.Application.Services
             }
 
             _logger.LogInformation("Password reset successful for: {Email}", email);
+
+            // Send Password Changed Email
+            var passwordChangedHtml = Common.EmailTemplates.GetPasswordChangedEmail(user.Name);
+            await _emailService.SendEmailAsync(user.Email, "Security Alert: Password Changed", passwordChangedHtml);
+
             return Response<string>.Success("Password reset successfully.");
         }
 
