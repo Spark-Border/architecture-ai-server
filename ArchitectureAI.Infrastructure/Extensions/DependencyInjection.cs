@@ -1,5 +1,6 @@
 using ArchitectureAI.Application.Interfaces.Repositories;
 using ArchitectureAI.Application.Interfaces.Services;
+using ArchitectureAI.Application.Interfaces.Infrastructure;
 using ArchitectureAI.Application.Services;
 using ArchitectureAI.Infrastructure.Identity;
 using ArchitectureAI.Infrastructure.Services;
@@ -61,6 +62,9 @@ public static class DependencyInjection
         });
 
         services.AddScoped<ArchitectureAI.Infrastructure.Data.DataSeeder>();
+        
+        // Email Service
+        services.AddScoped<IEmailService, BrevoEmailService>();
 
         services
             .AddMultiTenant<TenantInfo>()

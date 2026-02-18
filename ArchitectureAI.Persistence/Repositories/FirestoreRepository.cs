@@ -269,7 +269,65 @@ public class FirestoreRepository<T> : IGenericRepository<T>
 
     public async Task<int> CountAsync(Expression<Func<T, bool>> expression)
     {
-        throw new NotImplementedException("Count with filter not efficiently implemented yet.");
+        if (
+            expression.Body is BinaryExpression binaryExpression
+            && binaryExpression.NodeType == ExpressionType.Equal
+        )
+        {
+            var left = binaryExpression.Left;
+            var right = binaryExpression.Right;
+
+            string? propertyName = null;
+            object? value = null;
+
+            if (left is MemberExpression memberLeft && right is ConstantExpression constantRight)
+            {
+                propertyName = memberLeft.Member.Name;
+                value = constantRight.Value;
+            }
+            else if (
+                left is ConstantExpression constantLeft
+                && right is MemberExpression memberRight
+            )
+            {
+                propertyName = memberRight.Member.Name;
+                value = constantLeft.Value;
+            }
+            else if (
+                left is MemberExpression memberLeftClosure
+                && right is MemberExpression memberRightClosure
+            )
+            {
+                if (memberLeftClosure.Expression is ParameterExpression)
+                {
+                    propertyName = memberLeftClosure.Member.Name;
+                    value = FirestoreRepository<T>.GetValue(memberRightClosure);
+                }
+                else if (memberRightClosure.Expression is ParameterExpression)
+                {
+                    propertyName = memberRightClosure.Member.Name;
+                    value = FirestoreRepository<T>.GetValue(memberLeftClosure);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(propertyName))
+            {
+                var query = _collection.WhereEqualTo(propertyName, value);
+
+                // Enforce Tenant Isolation
+                if (TenantId != null && propertyName != nameof(Entity.TenantId))
+                {
+                    query = query.WhereEqualTo(nameof(Entity.TenantId), TenantId);
+                }
+
+                var snapshot = await query.Count().GetSnapshotAsync();
+                return (int)snapshot.Count!;
+            }
+        }
+
+        throw new NotImplementedException(
+            "Only simple equality queries (e.g. x => x.Name == 'Value') are supported in CountAsync for now."
+        );
     }
 
     public async Task<int> CountAsync()

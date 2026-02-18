@@ -4,6 +4,7 @@ using ArchitectureAI.Application.Auth.DTOs;
 using ArchitectureAI.Application.Auth.Responses;
 using ArchitectureAI.Application.Interfaces.Repositories;
 using ArchitectureAI.Application.Interfaces.Services;
+using ArchitectureAI.Application.Interfaces.Infrastructure;
 using ArchitectureAI.Common.Common.Responses;
 using ArchitectureAI.Domain.Users;
 using Microsoft.AspNetCore.Http;
@@ -21,7 +22,8 @@ namespace ArchitectureAI.Application.Services
         ITokenService tokenService,
         ITenantService tenantService,
         IAuditService auditService,
-        IHttpContextAccessor httpContextAccessor, // Injected for IP
+        IEmailService emailService,
+        IHttpContextAccessor httpContextAccessor,
         IConfiguration configuration,
         ILogger<AuthenticationService> logger
     ) : IAuthenticationService
@@ -33,7 +35,8 @@ namespace ArchitectureAI.Application.Services
         private readonly ITokenService _tokenService = tokenService;
         private readonly ITenantService _tenantService = tenantService;
         private readonly IAuditService _auditService = auditService;
-        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor; // Assigned
+        private readonly IEmailService _emailService = emailService;
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IConfiguration _configuration = configuration;
         private readonly ILogger<AuthenticationService> _logger = logger;
 
@@ -202,6 +205,14 @@ namespace ArchitectureAI.Application.Services
                 user.TenantId
             );
 
+            // Send Welcome / Verification Email
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            // Assuming frontend URL structure
+            var verificationLink = $"https://app.architectureai.com/verify-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+            var emailHtml = Common.EmailTemplates.GetVerifyEmail(user.Name, verificationLink);
+            
+            await _emailService.SendEmailAsync(user.Email, "Welcome to ArchitectureAI - Verify Your Email", emailHtml);
+
             var response = new RegisterResponse
             {
                 UserId = user.Id,
@@ -225,9 +236,18 @@ namespace ArchitectureAI.Application.Services
                 );
                 return Response<string>.Success("If account exists, email sent."); // Silent success
             }
+            
+            if (user.EmailConfirmed)
+            {
+                 return Response<string>.Success("Email already verified.");
+            }
 
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            // TODO: Send email
+            var verificationLink = $"https://app.architectureai.com/verify-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+            var emailHtml = Common.EmailTemplates.GetVerifyEmail(user.Name, verificationLink); // Re-use welcome template or create specific verification one
+
+            await _emailService.SendEmailAsync(user.Email, "Verify Your Email", emailHtml);
+            
             _logger.LogInformation("Verification email sent to: {Email}", email);
             return Response<string>.Success("Verification email sent.");
         }
@@ -252,7 +272,11 @@ namespace ArchitectureAI.Application.Services
             }
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            // TODO: Send email
+            var resetLink = $"https://app.architectureai.com/reset-password?email={Uri.EscapeDataString(email)}&token={Uri.EscapeDataString(token)}";
+            var emailHtml = Common.EmailTemplates.GetPasswordResetEmail(user.Name, resetLink);
+
+            await _emailService.SendEmailAsync(user.Email, "Reset Your Password", emailHtml);
+
             _logger.LogInformation("Password reset link sent to: {Email}", email);
             return Response<string>.Success("Password reset link sent.");
         }
