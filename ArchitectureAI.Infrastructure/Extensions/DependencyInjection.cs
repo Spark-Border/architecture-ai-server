@@ -3,10 +3,10 @@ using ArchitectureAI.Application.Interfaces.Services;
 using ArchitectureAI.Application.Services;
 using ArchitectureAI.Infrastructure.Identity;
 using ArchitectureAI.Infrastructure.Services;
+using Finbuckle.MultiTenant;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Finbuckle.MultiTenant;
 
 namespace ArchitectureAI.Infrastructure.Extensions;
 
@@ -20,7 +20,9 @@ public static class DependencyInjection
         var projectId = Environment.GetEnvironmentVariable("FIREBASE_PROJECT_ID");
         if (string.IsNullOrEmpty(projectId))
         {
-            throw new InvalidOperationException("Firebase Project ID is not configured (FIREBASE_PROJECT_ID).");
+            throw new InvalidOperationException(
+                "Firebase Project ID is not configured (FIREBASE_PROJECT_ID)."
+            );
         }
 
         services.AddSingleton<IEncryptionService, EncryptionService>();
@@ -60,7 +62,8 @@ public static class DependencyInjection
 
         services.AddScoped<ArchitectureAI.Infrastructure.Data.DataSeeder>();
 
-        services.AddMultiTenant<TenantInfo>()
+        services
+            .AddMultiTenant<TenantInfo>()
             .WithStore<Tenancy.FirestoreMultiTenantStore>(ServiceLifetime.Scoped)
             .WithHeaderStrategy("X-Tenant-ID")
             .WithClaimStrategy("tenant_id")

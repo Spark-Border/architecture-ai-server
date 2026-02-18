@@ -39,20 +39,40 @@ namespace ArchitectureAI.Application.Services
         public async Task<Response<LoginResponse>> LoginAsync(LoginRequest request)
         {
             _logger.LogInformation("Attempting login for user: {Email}", request.Email);
-            
+
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
             {
-                _logger.LogWarning("Login failed for user: {Email}. User not found.", request.Email);
-                await LogAuthEventAsync("Login Failed", $"Login attempted for non-existent user: {request.Email}", "system", "Anonymous");
+                _logger.LogWarning(
+                    "Login failed for user: {Email}. User not found.",
+                    request.Email
+                );
+                await LogAuthEventAsync(
+                    "Login Failed",
+                    $"Login attempted for non-existent user: {request.Email}",
+                    "system",
+                    "Anonymous"
+                );
                 return Response<LoginResponse>.Failure("Invalid credentials", 401);
             }
 
-            var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
+            var result = await _signInManager.CheckPasswordSignInAsync(
+                user,
+                request.Password,
+                false
+            );
             if (!result.Succeeded)
             {
-                _logger.LogWarning("Login failed for user: {Email}. Invalid password.", request.Email);
-                await LogAuthEventAsync("Login Failed", $"Invalid password provided for user: {request.Email}", user.TenantId ?? "system", user.Email);
+                _logger.LogWarning(
+                    "Login failed for user: {Email}. Invalid password.",
+                    request.Email
+                );
+                await LogAuthEventAsync(
+                    "Login Failed",
+                    $"Invalid password provided for user: {request.Email}",
+                    user.TenantId ?? "system",
+                    user.Email
+                );
                 return Response<LoginResponse>.Failure("Invalid credentials", 401);
             }
 
@@ -66,7 +86,8 @@ namespace ArchitectureAI.Application.Services
             foreach (var roleName in roles)
             {
                 var role = await _roleManager.FindByNameAsync(roleName);
-                if (role != null) permissions.AddRange(role.Permissions);
+                if (role != null)
+                    permissions.AddRange(role.Permissions);
             }
             permissions = [.. permissions.Distinct()];
 
@@ -75,10 +96,15 @@ namespace ArchitectureAI.Application.Services
 
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
-            
+
             await _userManager.UpdateAsync(user);
-            
-            await LogAuthEventAsync("Login", $"User {user.Email} logged in successfully.", user.TenantId, user.Email);
+
+            await LogAuthEventAsync(
+                "Login",
+                $"User {user.Email} logged in successfully.",
+                user.TenantId,
+                user.Email
+            );
 
             _logger.LogInformation("Login successful for user: {Email}", request.Email);
 
@@ -100,24 +126,32 @@ namespace ArchitectureAI.Application.Services
         }
 
         // Helper for cleaner Audit Logging with IP capture
-        private async Task LogAuthEventAsync(string action, string description, string tenantId, string userEmail)
+        private async Task LogAuthEventAsync(
+            string action,
+            string description,
+            string tenantId,
+            string userEmail
+        )
         {
-            var ipAddress = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
-            
-            await _auditService.EnqueueAuditLogAsync(new Domain.Audit.AuditTrail
-            {
-                Id = Guid.NewGuid().ToString(),
-                TenantId = tenantId ?? "system",
-                ActionName = action,
-                ActionDescription = description,
-                Type = "Security",
-                Module = "Authentication",
-                LoggedInUser = userEmail,
-                CreatedBy = userEmail, // Or System
-                ActionTime = DateTime.UtcNow,
-                DateCreated = DateTime.UtcNow,
-                Origin = ipAddress!
-            });
+            var ipAddress =
+                _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+
+            await _auditService.EnqueueAuditLogAsync(
+                new Domain.Audit.AuditTrail
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    TenantId = tenantId ?? "system",
+                    ActionName = action,
+                    ActionDescription = description,
+                    Type = "Security",
+                    Module = "Authentication",
+                    LoggedInUser = userEmail,
+                    CreatedBy = userEmail, // Or System
+                    ActionTime = DateTime.UtcNow,
+                    DateCreated = DateTime.UtcNow,
+                    Origin = ipAddress!,
+                }
+            );
         }
 
         public async Task<Response<RegisterResponse>> RegisterAsync(RegisterRequest request)
@@ -139,20 +173,33 @@ namespace ArchitectureAI.Application.Services
                 Email = request.Email,
                 Name = request.Email.Split('@')[0],
                 EmailConfirmed = false,
-                TenantId = await GenerateUniqueTenantIdAsync() // Secure & Checked for collisions
+                TenantId = await GenerateUniqueTenantIdAsync(), // Secure & Checked for collisions
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                _logger.LogError("Registration failed for {Email}: {Errors}", request.Email, errors);
+                _logger.LogError(
+                    "Registration failed for {Email}: {Errors}",
+                    request.Email,
+                    errors
+                );
                 return Response<RegisterResponse>.Failure($"Registration failed: {errors}", 400);
             }
 
-            await LogAuthEventAsync("Register", $"New user registered. Created Organization ID: {user.TenantId}", user.TenantId, user.Email);
+            await LogAuthEventAsync(
+                "Register",
+                $"New user registered. Created Organization ID: {user.TenantId}",
+                user.TenantId,
+                user.Email
+            );
 
-            _logger.LogInformation("User created successfully: {Email} (Org: {TenantId})", request.Email, user.TenantId);
+            _logger.LogInformation(
+                "User created successfully: {Email} (Org: {TenantId})",
+                request.Email,
+                user.TenantId
+            );
 
             var response = new RegisterResponse
             {
@@ -241,8 +288,11 @@ namespace ArchitectureAI.Application.Services
         )
         {
             _logger.LogInformation("Attempting token refresh.");
-            
-            var user = await _userRepository.FindAsync(u => u.RefreshToken == request.RefreshToken, ignoreTenantId: true);
+
+            var user = await _userRepository.FindAsync(
+                u => u.RefreshToken == request.RefreshToken,
+                ignoreTenantId: true
+            );
             if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {
                 _logger.LogWarning("Token refresh failed. Invalid or expired token.");
@@ -271,7 +321,7 @@ namespace ArchitectureAI.Application.Services
 
             user.RefreshToken = newRefreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
-            
+
             await _userManager.UpdateAsync(user);
 
             _logger.LogInformation("Token refresh successful for user: {Email}", user.Email);
@@ -298,24 +348,29 @@ namespace ArchitectureAI.Application.Services
             }
             return Response<string>.Success("Logged out successfully");
         }
-        
+
         private async Task<string> GenerateUniqueTenantIdAsync()
         {
             const int MaxRetries = 5;
             for (int i = 0; i < MaxRetries; i++)
             {
                 var candidateId = GenerateCryptoRandomId();
-                
+
                 var count = await _userRepository.CountAsync(u => u.TenantId == candidateId);
                 if (count == 0)
                 {
                     return candidateId;
                 }
-                
-                _logger.LogWarning("Collision detected for TenantID: {Id}. Retrying...", candidateId);
+
+                _logger.LogWarning(
+                    "Collision detected for TenantID: {Id}. Retrying...",
+                    candidateId
+                );
             }
 
-            throw new InvalidOperationException("Failed to generate a unique Tenant ID after multiple attempts.");
+            throw new InvalidOperationException(
+                "Failed to generate a unique Tenant ID after multiple attempts."
+            );
         }
 
         private static string GenerateCryptoRandomId()
@@ -323,7 +378,7 @@ namespace ArchitectureAI.Application.Services
             const int length = 12;
             var chars = new char[length];
             var allowed = "0123456789";
-            
+
             var data = new byte[length];
             using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
             {

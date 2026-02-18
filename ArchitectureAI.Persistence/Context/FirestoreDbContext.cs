@@ -26,7 +26,7 @@ public class FirestoreDbContext
             _firestoreDb = new FirestoreDbBuilder
             {
                 ProjectId = projectId,
-                EmulatorDetection = Google.Api.Gax.EmulatorDetection.EmulatorOnly
+                EmulatorDetection = Google.Api.Gax.EmulatorDetection.EmulatorOnly,
             }.Build();
         }
         else

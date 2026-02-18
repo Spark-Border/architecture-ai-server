@@ -17,8 +17,7 @@ public class FirestoreRepository<T> : IGenericRepository<T>
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IAuditService _auditService;
 
-    private string? TenantId =>
-        _tenantService.TenantId;
+    private string? TenantId => _tenantService.TenantId;
 
     public FirestoreRepository(
         Context.FirestoreDbContext context,
@@ -48,7 +47,9 @@ public class FirestoreRepository<T> : IGenericRepository<T>
         }
         else if (string.IsNullOrEmpty(entity.TenantId))
         {
-             throw new InvalidOperationException($"Cannot create entity of type {typeof(T).Name} without a Tenant Context or explicit TenantId.");
+            throw new InvalidOperationException(
+                $"Cannot create entity of type {typeof(T).Name} without a Tenant Context or explicit TenantId."
+            );
         }
 
         var docRef = _collection.Document(entity.Id);
@@ -73,7 +74,9 @@ public class FirestoreRepository<T> : IGenericRepository<T>
             }
             else if (string.IsNullOrEmpty(entity.TenantId))
             {
-                throw new InvalidOperationException($"Cannot create entity of type {typeof(T).Name} without a Tenant Context or explicit TenantId.");
+                throw new InvalidOperationException(
+                    $"Cannot create entity of type {typeof(T).Name} without a Tenant Context or explicit TenantId."
+                );
             }
 
             var docRef = _collection.Document(entity.Id);
@@ -88,11 +91,16 @@ public class FirestoreRepository<T> : IGenericRepository<T>
         throw new NotImplementedException("Direct IQueryable not fully supported. Use FindAsync.");
     }
 
-    public async Task<T?> FindAsync(Expression<Func<T, bool>> expression, bool ignoreTenantId = false)
+    public async Task<T?> FindAsync(
+        Expression<Func<T, bool>> expression,
+        bool ignoreTenantId = false
+    )
     {
         // Simple Expression Parser for "x => x.Prop == Value"
-        if (expression.Body is BinaryExpression binaryExpression
-            && binaryExpression.NodeType == ExpressionType.Equal)
+        if (
+            expression.Body is BinaryExpression binaryExpression
+            && binaryExpression.NodeType == ExpressionType.Equal
+        )
         {
             var left = binaryExpression.Left;
             var right = binaryExpression.Right;
@@ -107,31 +115,37 @@ public class FirestoreRepository<T> : IGenericRepository<T>
                 value = constantRight.Value;
             }
             // Case 2: Value == x.Prop
-            else if (left is ConstantExpression constantLeft && right is MemberExpression memberRight)
+            else if (
+                left is ConstantExpression constantLeft
+                && right is MemberExpression memberRight
+            )
             {
                 propertyName = memberRight.Member.Name;
                 value = constantLeft.Value;
             }
             // Case 3: Handle captured variables (closures)
-            else if (left is MemberExpression memberLeftClosure && right is MemberExpression memberRightClosure) 
+            else if (
+                left is MemberExpression memberLeftClosure
+                && right is MemberExpression memberRightClosure
+            )
             {
-                 // Check which side is the parameter
-                 if (memberLeftClosure.Expression is ParameterExpression) 
-                 {
-                     propertyName = memberLeftClosure.Member.Name;
-                     value = FirestoreRepository<T>.GetValue(memberRightClosure);
-                 }
-                 else if (memberRightClosure.Expression is ParameterExpression)
-                 {
-                     propertyName = memberRightClosure.Member.Name;
-                     value = FirestoreRepository<T>.GetValue(memberLeftClosure);
-                 }
+                // Check which side is the parameter
+                if (memberLeftClosure.Expression is ParameterExpression)
+                {
+                    propertyName = memberLeftClosure.Member.Name;
+                    value = FirestoreRepository<T>.GetValue(memberRightClosure);
+                }
+                else if (memberRightClosure.Expression is ParameterExpression)
+                {
+                    propertyName = memberRightClosure.Member.Name;
+                    value = FirestoreRepository<T>.GetValue(memberLeftClosure);
+                }
             }
 
             if (!string.IsNullOrEmpty(propertyName))
             {
                 var query = _collection.WhereEqualTo(propertyName, value);
-                
+
                 // Enforce Tenant Isolation (unless ignored for global lookups like Login/UserStore)
                 if (!ignoreTenantId)
                 {
@@ -151,7 +165,9 @@ public class FirestoreRepository<T> : IGenericRepository<T>
             }
         }
 
-        throw new NotImplementedException("Only simple equality queries (e.g. x => x.Name == 'Value') are supported in FindAsync for now.");
+        throw new NotImplementedException(
+            "Only simple equality queries (e.g. x => x.Name == 'Value') are supported in FindAsync for now."
+        );
     }
 
     private static object GetValue(MemberExpression member)
@@ -206,9 +222,9 @@ public class FirestoreRepository<T> : IGenericRepository<T>
             if (entity.TenantId != TenantId)
                 return 0;
         }
-        else 
+        else
         {
-             return 0;
+            return 0;
         }
 
         await _collection.Document(entity.Id).DeleteAsync();
@@ -223,7 +239,7 @@ public class FirestoreRepository<T> : IGenericRepository<T>
         {
             if (TenantId != null && entity.TenantId != TenantId)
                 continue;
-            
+
             if (TenantId == null)
                 continue;
 
@@ -241,7 +257,7 @@ public class FirestoreRepository<T> : IGenericRepository<T>
         }
         else if (string.IsNullOrEmpty(entity.TenantId))
         {
-             throw new InvalidOperationException("Tenant Context is missing.");
+            throw new InvalidOperationException("Tenant Context is missing.");
         }
 
         entity.DateModified = DateTime.UtcNow;
@@ -258,7 +274,8 @@ public class FirestoreRepository<T> : IGenericRepository<T>
 
     public async Task<int> CountAsync()
     {
-        if (TenantId == null) return 0;
+        if (TenantId == null)
+            return 0;
 
         var query = _collection.WhereEqualTo(nameof(Entity.TenantId), TenantId);
         var snapshot = await query.Count().GetSnapshotAsync();

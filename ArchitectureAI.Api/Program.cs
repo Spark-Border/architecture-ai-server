@@ -1,17 +1,17 @@
 using System.Text;
+using ArchitectureAI.Api.Filters;
 using ArchitectureAI.Api.Middlewares;
 using ArchitectureAI.Application.Extensions;
 using ArchitectureAI.Application.Services;
 using ArchitectureAI.Infrastructure.Data;
 using ArchitectureAI.Infrastructure.Extensions;
 using ArchitectureAI.Persistence.Extensions;
+using Finbuckle.MultiTenant;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using ArchitectureAI.Api.Filters;
 using NLog;
 using NLog.Web;
-using Finbuckle.MultiTenant;
 
 // Early init of NLog to allow logging "during" startup
 var logger = NLog.LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
@@ -26,21 +26,22 @@ try
 
     // Load .env file manually to avoid dependency issues
     var root = Directory.GetCurrentDirectory();
-    
+
     var dotenvPath = Path.Combine(root, ".env");
     if (!File.Exists(dotenvPath))
     {
-         // Try checking ArchitectureAI.Api subfolder if running from root
-         var apiEnv = Path.Combine(root, "ArchitectureAI.Api", ".env");
-         if (File.Exists(apiEnv))
-         {
-             dotenvPath = apiEnv;
-         }
-         else
-         {
-             var parent = Directory.GetParent(root)?.FullName;
-             if (parent != null) dotenvPath = Path.Combine(parent, ".env");
-         }
+        // Try checking ArchitectureAI.Api subfolder if running from root
+        var apiEnv = Path.Combine(root, "ArchitectureAI.Api", ".env");
+        if (File.Exists(apiEnv))
+        {
+            dotenvPath = apiEnv;
+        }
+        else
+        {
+            var parent = Directory.GetParent(root)?.FullName;
+            if (parent != null)
+                dotenvPath = Path.Combine(parent, ".env");
+        }
     }
 
     if (File.Exists(dotenvPath))
@@ -48,7 +49,8 @@ try
         foreach (var line in File.ReadAllLines(dotenvPath))
         {
             var parts = line.Split('=', 2, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length != 2) continue;
+            if (parts.Length != 2)
+                continue;
             var key = parts[0].Trim();
             var value = parts[1].Trim();
             // Remove quotes if present
@@ -77,26 +79,35 @@ try
     builder
         .Services.AddAuthentication(options =>
         {
-            options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultAuthenticateScheme = Microsoft
+                .AspNetCore
+                .Authentication
+                .JwtBearer
+                .JwtBearerDefaults
+                .AuthenticationScheme;
+            options.DefaultChallengeScheme = Microsoft
+                .AspNetCore
+                .Authentication
+                .JwtBearer
+                .JwtBearerDefaults
+                .AuthenticationScheme;
         })
         .AddJwtBearer(options =>
         {
             var projectId = Environment.GetEnvironmentVariable("FIREBASE_PROJECT_ID");
             var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET");
 
-            options.TokenValidationParameters =
-                new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = $"https://securetoken.google.com/{projectId}",
-                    ValidateAudience = true,
-                    ValidAudience = projectId,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret!))
-                };
-            
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = $"https://securetoken.google.com/{projectId}",
+                ValidateAudience = true,
+                ValidAudience = projectId,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret!)),
+            };
+
             options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
             {
                 OnAuthenticationFailed = context =>
@@ -106,7 +117,7 @@ try
                 OnTokenValidated = context =>
                 {
                     return Task.CompletedTask;
-                }
+                },
             };
         });
 
@@ -157,33 +168,39 @@ try
         c.CustomSchemaIds(x => x.FullName); // Avoid "Conflicting schemaIds" error
 
         // Add Security Definition
-        c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-        {
-            Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"Bearer 12345abcdef\"",
-            Name = "Authorization",
-            In = ParameterLocation.Header,
-            Type = SecuritySchemeType.ApiKey,
-            Scheme = "Bearer"
-        });
+        c.AddSecurityDefinition(
+            "Bearer",
+            new OpenApiSecurityScheme
+            {
+                Description =
+                    "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"Bearer 12345abcdef\"",
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.ApiKey,
+                Scheme = "Bearer",
+            }
+        );
 
         // Add Security Requirement
-        c.AddSecurityRequirement(new OpenApiSecurityRequirement()
-        {
+        c.AddSecurityRequirement(
+            new OpenApiSecurityRequirement()
             {
-                new OpenApiSecurityScheme
                 {
-                    Reference = new OpenApiReference
+                    new OpenApiSecurityScheme
                     {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "Bearer"
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer",
+                        },
+                        Scheme = "oauth2",
+                        Name = "Bearer",
+                        In = ParameterLocation.Header,
                     },
-                    Scheme = "oauth2",
-                    Name = "Bearer",
-                    In = ParameterLocation.Header,
+                    new List<string>()
                 },
-                new List<string>()
             }
-        });
+        );
     });
 
     var app = builder.Build();
@@ -196,7 +213,9 @@ try
     {
         app.UseDeveloperExceptionPage(); // Detailed errors in Dev
         app.UseSwagger();
-        app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ArchitectureAI API v1"));
+        app.UseSwaggerUI(c =>
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "ArchitectureAI API v1")
+        );
     }
 
     // Seed Data

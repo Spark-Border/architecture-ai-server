@@ -10,23 +10,29 @@ namespace ArchitectureAI.Infrastructure.Services;
 
 public class TokenService : ITokenService
 {
-    public string GenerateJwtToken(ApplicationUser user, IList<string> roles, IList<string> permissions)
+    public string GenerateJwtToken(
+        ApplicationUser user,
+        IList<string> roles,
+        IList<string> permissions
+    )
     {
         var projectId = Environment.GetEnvironmentVariable("FIREBASE_PROJECT_ID");
         if (string.IsNullOrEmpty(projectId))
         {
-            throw new InvalidOperationException("Firebase Project ID is not configured (FIREBASE_PROJECT_ID).");
+            throw new InvalidOperationException(
+                "Firebase Project ID is not configured (FIREBASE_PROJECT_ID)."
+            );
         }
 
         var issuer = $"https://securetoken.google.com/{projectId}";
         var audience = projectId;
-        
+
         var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET");
         if (string.IsNullOrEmpty(secretKey))
         {
-             throw new InvalidOperationException("JWT Secret is not configured (JWT_SECRET).");
+            throw new InvalidOperationException("JWT Secret is not configured (JWT_SECRET).");
         }
-        
+
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
@@ -34,7 +40,7 @@ public class TokenService : ITokenService
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email!),
-            new("name", user.Name)
+            new("name", user.Name),
         };
 
         foreach (var role in roles)
@@ -52,7 +58,8 @@ public class TokenService : ITokenService
             audience: audience,
             claims: claims,
             expires: DateTime.UtcNow.AddMinutes(60),
-            signingCredentials: credentials);
+            signingCredentials: credentials
+        );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

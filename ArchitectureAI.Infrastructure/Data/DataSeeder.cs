@@ -78,11 +78,7 @@ public class DataSeeder(
                 Name = "Viewer",
                 Description = "Read-only access",
                 IsSystemRole = true,
-                Permissions =
-                [
-                    Permissions.Users.View,
-                    Permissions.Projects.View,
-                ],
+                Permissions = [Permissions.Users.View, Permissions.Projects.View],
             },
         };
 

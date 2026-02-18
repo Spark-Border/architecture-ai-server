@@ -4,7 +4,10 @@ using Microsoft.Extensions.Logging;
 
 namespace ArchitectureAI.Infrastructure.Tenancy;
 
-public class FirestoreMultiTenantStore(Persistence.Context.FirestoreDbContext context, ILogger<FirestoreMultiTenantStore> logger) : IMultiTenantStore<TenantInfo>
+public class FirestoreMultiTenantStore(
+    Persistence.Context.FirestoreDbContext context,
+    ILogger<FirestoreMultiTenantStore> logger
+) : IMultiTenantStore<TenantInfo>
 {
     private readonly FirestoreDb _firestore = context.Db;
     private readonly ILogger<FirestoreMultiTenantStore> _logger = logger;
@@ -20,7 +23,7 @@ public class FirestoreMultiTenantStore(Persistence.Context.FirestoreDbContext co
             {
                 return false;
             }
-            
+
             await docRef.SetAsync(tenantInfo);
             return true;
         }
@@ -47,7 +50,7 @@ public class FirestoreMultiTenantStore(Persistence.Context.FirestoreDbContext co
     }
 
     public async Task<bool> TryRemoveAsync(string identifier)
-    {   
+    {
         try
         {
             // Case 1: Identifier is ID
@@ -60,7 +63,9 @@ public class FirestoreMultiTenantStore(Persistence.Context.FirestoreDbContext co
             }
 
             // Case 2: Identifier is custom field 'Identifier'
-            var query = _firestore.Collection(CollectionName).WhereEqualTo(nameof(TenantInfo.Identifier), identifier);
+            var query = _firestore
+                .Collection(CollectionName)
+                .WhereEqualTo(nameof(TenantInfo.Identifier), identifier);
             var querySnap = await query.Limit(1).GetSnapshotAsync();
             if (querySnap.Count > 0)
             {
@@ -69,8 +74,8 @@ public class FirestoreMultiTenantStore(Persistence.Context.FirestoreDbContext co
             }
 
             return false;
-
-        } catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Error removing tenant {Identifier}", identifier);
             return false;
@@ -79,7 +84,7 @@ public class FirestoreMultiTenantStore(Persistence.Context.FirestoreDbContext co
 
     public async Task<TenantInfo?> TryGetAsync(string id)
     {
-         try
+        try
         {
             var docRef = _firestore.Collection(CollectionName).Document(id);
             var snapshot = await docRef.GetSnapshotAsync();
@@ -98,20 +103,22 @@ public class FirestoreMultiTenantStore(Persistence.Context.FirestoreDbContext co
 
     public async Task<TenantInfo?> TryGetByIdentifierAsync(string identifier)
     {
-         try
+        try
         {
-             // Case 1: Identifier might match ID directly (often used interchangeably)
+            // Case 1: Identifier might match ID directly (often used interchangeably)
             var docRef = _firestore.Collection(CollectionName).Document(identifier);
             var snapshot = await docRef.GetSnapshotAsync();
             if (snapshot.Exists)
             {
-                 var t = snapshot.ConvertTo<TenantInfo>();
-                 // Verify it actually matches (though if ID matches, it's the tenant)
-                 return t;
+                var t = snapshot.ConvertTo<TenantInfo>();
+                // Verify it actually matches (though if ID matches, it's the tenant)
+                return t;
             }
 
             // Case 2: Custom Identifier field
-            var query = _firestore.Collection(CollectionName).WhereEqualTo(nameof(TenantInfo.Identifier), identifier);
+            var query = _firestore
+                .Collection(CollectionName)
+                .WhereEqualTo(nameof(TenantInfo.Identifier), identifier);
             var qSnap = await query.Limit(1).GetSnapshotAsync();
             if (qSnap.Count > 0)
             {
@@ -125,17 +132,18 @@ public class FirestoreMultiTenantStore(Persistence.Context.FirestoreDbContext co
             return null;
         }
     }
+
     public async Task<IEnumerable<TenantInfo>> GetAllAsync()
     {
-         try
+        try
         {
             var query = _firestore.Collection(CollectionName);
             var snapshot = await query.GetSnapshotAsync();
-            
+
             var tenants = new List<TenantInfo>();
             foreach (var doc in snapshot.Documents)
             {
-               tenants.Add(doc.ConvertTo<TenantInfo>());
+                tenants.Add(doc.ConvertTo<TenantInfo>());
             }
             return tenants;
         }
