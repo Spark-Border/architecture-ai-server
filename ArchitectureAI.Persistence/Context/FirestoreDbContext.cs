@@ -1,5 +1,4 @@
 using Google.Cloud.Firestore;
-using Grpc.Core; // Required for ChannelCredentials
 using Microsoft.Extensions.Configuration;
 
 namespace ArchitectureAI.Persistence.Context;
@@ -20,7 +19,6 @@ public class FirestoreDbContext
             );
         }
 
-        // Ensure GOOGLE_APPLICATION_CREDENTIALS is set in environment or handled via default auth
         _firestoreDb = FirestoreDb.Create(projectId);
     }
 

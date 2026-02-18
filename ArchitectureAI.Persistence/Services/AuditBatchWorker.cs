@@ -2,10 +2,11 @@ using System.Threading.Channels;
 using ArchitectureAI.Application.Interfaces.Services;
 using ArchitectureAI.Domain.Audit;
 using ArchitectureAI.Persistence.Context;
-using Google.Cloud.Firestore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+
+using Microsoft.AspNetCore.Http;
 
 namespace ArchitectureAI.Persistence.Services;
 
@@ -14,14 +15,20 @@ public class AuditBatchWorker : BackgroundService, IAuditService
     private readonly Channel<AuditTrail> _channel;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<AuditBatchWorker> _logger;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     private const int BatchSize = 50;
     private const int MaxQueueSize = 1000; // Cap memory usage
     private readonly TimeSpan _flushInterval = TimeSpan.FromSeconds(2); // Flush faster to minimize risk
 
-    public AuditBatchWorker(IServiceProvider serviceProvider, ILogger<AuditBatchWorker> logger)
+    public AuditBatchWorker(
+        IServiceProvider serviceProvider,
+        ILogger<AuditBatchWorker> logger,
+        IHttpContextAccessor httpContextAccessor
+    )
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _httpContextAccessor = httpContextAccessor;
 
         // Bounded Channel:
         // - SingleReader (Worker)
@@ -42,6 +49,36 @@ public class AuditBatchWorker : BackgroundService, IAuditService
         // If queue < 1000, completes instantly.
         // If queue == 1000, waits until space is available (Backpressure).
         return _channel.Writer.WriteAsync(auditLog);
+    }
+
+    public async ValueTask LogSecurityEventAsync(
+        string action,
+        string description,
+        string tenantId,
+        string userEmail,
+        string type = "Security",
+        string module = "System"
+    )
+    {
+        var ipAddress =
+            _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+
+        await EnqueueAuditLogAsync(
+            new AuditTrail
+            {
+                Id = Guid.NewGuid().ToString(),
+                TenantId = tenantId ?? "System",
+                ActionName = action,
+                ActionDescription = description,
+                Type = type,
+                Module = module,
+                LoggedInUser = userEmail,
+                CreatedBy = userEmail,
+                ActionTime = DateTime.UtcNow,
+                DateCreated = DateTime.UtcNow,
+                Origin = ipAddress!,
+            }
+        );
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

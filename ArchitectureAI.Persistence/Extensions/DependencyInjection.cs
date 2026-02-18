@@ -4,10 +4,8 @@ using ArchitectureAI.Application.Services;
 using ArchitectureAI.Persistence.Context;
 using ArchitectureAI.Persistence.Repositories;
 using ArchitectureAI.Persistence.Services; // Ensure this namespace is correct for AuditBatchWorker
-using Microsoft.AspNetCore.Http; // Required for IHttpContextAccessor
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting; // Required for IHostedService
 
 namespace ArchitectureAI.Persistence.Extensions;
 
